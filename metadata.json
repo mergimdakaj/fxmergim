@@ -1,0 +1,6 @@
+{
+  "name": "ICT XAUUSD Strategy & Live TradingView Backtester",
+  "description": "Multi-asset automated strategy scanner featuring independent ICT and MSNR LIT (Trade with Abjeed) dashboards with live TradingView overlays, entry anticipation radars, and execution tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
