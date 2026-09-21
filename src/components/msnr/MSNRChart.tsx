@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData, ColorType, Time, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import { Candle } from '../../types/trading';
 import { MSNRTrade } from '../../types/msnr';
+import { marketPriceService } from '../../services/marketPriceService';
 import {
   Layers,
   TrendingUp,
@@ -18,6 +19,7 @@ import {
   Smartphone,
   AlertCircle,
   HelpCircle,
+  Sliders,
 } from 'lucide-react';
 import { MT4ExecutionModal } from '../MT4ExecutionModal';
 import { MultiTargetLevels } from '../../utils/ictTradeManagement';
@@ -54,10 +56,13 @@ export const MSNRChart: React.FC<MSNRChartProps> = ({
   const [copiedLevels, setCopiedLevels] = useState<boolean>(false);
   const [showMt4Modal, setShowMt4Modal] = useState<boolean>(false);
   const [simulatedPrice, setSimulatedPrice] = useState<number>(livePrice);
+  const [showCalibrateBar, setShowCalibrateBar] = useState<boolean>(false);
+  const [calInput, setCalInput] = useState<string>(() => livePrice.toFixed(decimals));
 
   useEffect(() => {
     setSimulatedPrice(livePrice);
-  }, [livePrice]);
+    setCalInput(livePrice.toFixed(decimals));
+  }, [livePrice, decimals]);
 
   // Clean symbol string
   const cleanSymbol = symbol.replace('/', '');
@@ -422,7 +427,7 @@ export const MSNRChart: React.FC<MSNRChartProps> = ({
           </div>
         </div>
 
-        {/* Right Actions: Copy & MT4 Guide */}
+        {/* Right Actions: Copy & MT4 Guide & Calibrate */}
         <div className="flex items-center gap-2">
           <button
             id="msnr-copy-levels-btn"
@@ -432,6 +437,20 @@ export const MSNRChart: React.FC<MSNRChartProps> = ({
           >
             {copiedLevels ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedLevels ? 'U Kopjuan!' : 'Kopjo Nivelet'}</span>
+          </button>
+
+          <button
+            id="msnr-calibrate-price-btn"
+            onClick={() => setShowCalibrateBar(!showCalibrateBar)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
+              showCalibrateBar
+                ? 'bg-sky-500 text-slate-950 border-sky-400'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+            title="Përputh çmimin live me TradingView (p.sh. 4355)"
+          >
+            <Sliders className="w-3.5 h-3.5 text-sky-400" />
+            <span>Përputh me TV</span>
           </button>
 
           <button
@@ -445,6 +464,82 @@ export const MSNRChart: React.FC<MSNRChartProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Inline Calibration Bar */}
+      {showCalibrateBar && (
+        <div className="px-4 py-2.5 bg-slate-950 border-b border-sky-500/30 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-sky-400 font-bold">Përputhje 100% me TradingView:</span>
+            <span className="text-slate-400">Shkruani çmimin e saktë nga TradingView (p.sh. 4355.00):</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <span className="absolute left-2.5 top-1.5 text-slate-500 font-mono">{currencySymbol}</span>
+              <input
+                type="number"
+                step="0.01"
+                value={calInput}
+                onChange={(e) => setCalInput(e.target.value)}
+                className="w-28 pl-6 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs focus:border-sky-500 outline-none"
+                placeholder="4355.00"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                const p = parseFloat(calInput);
+                if (!isNaN(p) && p > 0) {
+                  const assetKey = cleanSymbol.includes('XAU') ? 'XAUUSD' : cleanSymbol.includes('EUR') ? 'EURUSD' : cleanSymbol.includes('GBP') ? 'GBPUSD' : 'USDJPY';
+                  marketPriceService.syncExactWithTradingView(assetKey, p);
+                }
+              }}
+              className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1 transition-all"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Përputh
+            </button>
+
+            <button
+              onClick={() => {
+                const p = (parseFloat(calInput) || livePrice) - 1;
+                setCalInput(p.toFixed(decimals));
+                const assetKey = cleanSymbol.includes('XAU') ? 'XAUUSD' : cleanSymbol.includes('EUR') ? 'EURUSD' : cleanSymbol.includes('GBP') ? 'GBPUSD' : 'USDJPY';
+                marketPriceService.syncExactWithTradingView(assetKey, p);
+              }}
+              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+              title="Zbrit 1 dollar/njësi"
+            >
+              -1.00
+            </button>
+
+            <button
+              onClick={() => {
+                const p = (parseFloat(calInput) || livePrice) + 1;
+                setCalInput(p.toFixed(decimals));
+                const assetKey = cleanSymbol.includes('XAU') ? 'XAUUSD' : cleanSymbol.includes('EUR') ? 'EURUSD' : cleanSymbol.includes('GBP') ? 'GBPUSD' : 'USDJPY';
+                marketPriceService.syncExactWithTradingView(assetKey, p);
+              }}
+              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+              title="Shto 1 dollar/njësi"
+            >
+              +1.00
+            </button>
+
+            <button
+              onClick={() => {
+                const assetKey = cleanSymbol.includes('XAU') ? 'XAUUSD' : cleanSymbol.includes('EUR') ? 'EURUSD' : cleanSymbol.includes('GBP') ? 'GBPUSD' : 'USDJPY';
+                marketPriceService.resetOffset(assetKey);
+                setCalInput(livePrice.toFixed(decimals));
+              }}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs border border-slate-700"
+              title="Rivendos çmimin origjinal nga feed"
+            >
+              Rivendos Feed
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Chart Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative">

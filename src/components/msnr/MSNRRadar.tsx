@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MSNRRadarSetup, INITIAL_MSNR_RADAR_SETUPS } from '../../data/msnrData';
 import { soundService } from '../../utils/audioAlert';
 import { marketPriceService } from '../../services/marketPriceService';
+import { MSNRCalendarService } from '../../services/msnrCalendarService';
+import confetti from 'canvas-confetti';
 import {
   Crosshair,
   Sparkles,
@@ -25,6 +27,11 @@ import {
   AlertCircle,
   PlusCircle,
   CheckCheck,
+  Calendar,
+  CalendarCheck,
+  Award,
+  X,
+  Target,
 } from 'lucide-react';
 
 interface MSNRRadarProps {
@@ -34,6 +41,7 @@ interface MSNRRadarProps {
   decimalsMap?: Record<string, number>;
   livePrices?: Record<string, number>;
   onTriggerSimulatedEntry?: (setup: MSNRRadarSetup) => void;
+  onNavigateToCalendar?: () => void;
 }
 
 export const MSNRRadar: React.FC<MSNRRadarProps> = ({
@@ -43,6 +51,7 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   decimalsMap = { XAUUSD: 2, EURUSD: 5, GBPUSD: 5, USDJPY: 3 },
   livePrices = {},
   onTriggerSimulatedEntry,
+  onNavigateToCalendar,
 }) => {
   const [setupsList, setSetupsList] = useState<MSNRRadarSetup[]>(setups && setups.length > 0 ? setups : INITIAL_MSNR_RADAR_SETUPS);
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'READY' | 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY'>('ALL');
@@ -56,6 +65,42 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   const [lastScanTime, setLastScanTime] = useState<string>(() => new Date().toLocaleTimeString('sq-AL'));
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [executedSetupId, setExecutedSetupId] = useState<string | null>(null);
+  const [promptSetup, setPromptSetup] = useState<MSNRRadarSetup | null>(null);
+  const [registeredSetups, setRegisteredSetups] = useState<Record<string, { outcome: 'WIN' | 'LOSS' | 'ACTIVE'; pips: number; time: string }>>({});
+
+  const handleRecordToCalendar = (
+    setup: MSNRRadarSetup,
+    outcome: 'WIN' | 'LOSS' | 'ACTIVE',
+    customPips?: number
+  ) => {
+    const recorded = MSNRCalendarService.recordRadarTradeToCalendar(setup, outcome, customPips);
+    setRegisteredSetups((prev) => ({
+      ...prev,
+      [setup.id]: {
+        outcome,
+        pips: recorded.resultPips10,
+        time: recorded.time,
+      },
+    }));
+
+    if (outcome === 'WIN') {
+      if (soundEnabled) soundService.playRadarPing();
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#10b981', '#38bdf8', '#fbbf24'],
+      });
+      setScanMessage(`🎉 U RUAJT NË KALENDAR: Tregtia ${setup.symbol} u regjistrua si FITORE (+${recorded.resultPips10} pips) për sot!`);
+    } else if (outcome === 'LOSS') {
+      setScanMessage(`🔴 U RUAJT NË KALENDAR: Tregtia ${setup.symbol} u regjistrua si HUPJE (-10 pips SL fiks) për sot.`);
+    } else {
+      setScanMessage(`⏳ U RUAJT NË KALENDAR: Tregtia ${setup.symbol} u regjistrua si Tregti Aktive për sot.`);
+    }
+
+    setPromptSetup(null);
+    setTimeout(() => setScanMessage(null), 7000);
+  };
 
   // Helper to get pip multiplier for distance calculation
   const getPipSize = (assetId: string): number => {
@@ -329,8 +374,11 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
       })
     );
 
-    setScanMessage(`🎯 Çmimi i tregut u lëviz në hyrje (${setup.expectedEntry})! Urdhri Sniper në ${setup.symbol} u aktivizua me SL 10 Pips!`);
-    setTimeout(() => setScanMessage(null), 5000);
+    setScanMessage(`🎯 Çmimi i tregut u lëviz në hyrje (${setup.expectedEntry})! Urdhri Sniper në ${setup.symbol} u aktivizua! Regjistrojeni në Kalendar më poshtë.`);
+    setTimeout(() => setScanMessage(null), 8000);
+
+    // Prompt user to immediately record to calendar as WIN (+50p), LOSS (-10p), or ACTIVE
+    setPromptSetup(setup);
 
     if (onTriggerSimulatedEntry) {
       onTriggerSimulatedEntry(setup);
@@ -454,6 +502,74 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
           <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wide shrink-0">
             MSNR LIT Active
           </span>
+        </div>
+      )}
+
+      {/* Interactive Prompt after price touch simulation */}
+      {promptSetup && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-slate-900 to-sky-950/90 border-2 border-emerald-500 shadow-2xl space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 shadow-lg font-black">
+                <Target className="w-5 h-5" />
+              </span>
+              <div>
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  <span>Hyrja Sniper u Prek: {promptSetup.symbol} {promptSetup.type} @ {promptSetup.expectedEntry}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 font-mono">
+                    SL 10 PIPS ({promptSetup.sl10Pips})
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-300">
+                  Urdhri u ekzekutua. Regjistrojeni këtë tregti drejtpërdrejt në Kalendarin e Fitimeve për sot:
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setPromptSetup(null)}
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+              title="Mbyll"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              onClick={() => handleRecordToCalendar(promptSetup, 'WIN', 50)}
+              className="py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/30 transition-all"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>🟢 Fitore (TP +50 Pips / +5R)</span>
+            </button>
+
+            <button
+              onClick={() => handleRecordToCalendar(promptSetup, 'LOSS')}
+              className="py-2 px-3.5 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-slate-950 border border-rose-500/50 font-black text-xs flex items-center gap-1.5 transition-all"
+            >
+              <TrendingDown className="w-4 h-4" />
+              <span>🔴 Humbje (SL Fiks 10 Pips)</span>
+            </button>
+
+            <button
+              onClick={() => handleRecordToCalendar(promptSetup, 'ACTIVE')}
+              className="py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/50 font-bold text-xs flex items-center gap-1.5 transition-all"
+            >
+              <Clock className="w-4 h-4" />
+              <span>🟡 Tregti Aktive në Progres</span>
+            </button>
+
+            {onNavigateToCalendar && (
+              <button
+                onClick={onNavigateToCalendar}
+                className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all ml-auto"
+              >
+                <CalendarCheck className="w-4 h-4" />
+                <span>Hap Kalendarin e Fitimeve →</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -772,6 +888,63 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
                       <span className="text-slate-600">•</span>
                       <span className="text-emerald-300 font-bold">TP3 (1:8+): {curSym}{setup.targetTp3.toFixed(dec)}</span>
                     </>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Record to Profit Calendar Section */}
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Regjistro në Kalendarin e Fitimeve (Sot):</span>
+                  </span>
+                  {registeredSetups[setup.id] && (
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-black flex items-center gap-1 ${
+                      registeredSetups[setup.id].outcome === 'WIN'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : registeredSetups[setup.id].outcome === 'LOSS'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}>
+                      <CheckCheck className="w-3 h-3" />
+                      {registeredSetups[setup.id].outcome === 'WIN'
+                        ? `U RUAJT: +${registeredSetups[setup.id].pips}p`
+                        : registeredSetups[setup.id].outcome === 'LOSS'
+                        ? 'U RUAJT: -10p'
+                        : 'U RUAJT: AKTIVE'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={() => handleRecordToCalendar(setup, 'WIN', 50)}
+                    className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1"
+                    title="Regjistro si Fitore me +50 Pips në Kalendarin e Fitimeve"
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    <span>🟢 Fitova (+50p TP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleRecordToCalendar(setup, 'LOSS')}
+                    className="flex-1 py-1.5 px-2.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-slate-950 border border-rose-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1"
+                    title="Regjistro si Humbje me Stop Loss 10 Pips (-10p) në Kalendar"
+                  >
+                    <TrendingDown className="w-3 h-3" />
+                    <span>🔴 Hupa (-10p SL)</span>
+                  </button>
+
+                  {onNavigateToCalendar && (
+                    <button
+                      onClick={onNavigateToCalendar}
+                      className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1"
+                      title="Shko tek Kalendari i Fitimeve"
+                    >
+                      <CalendarCheck className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Kalendari →</span>
+                    </button>
                   )}
                 </div>
               </div>

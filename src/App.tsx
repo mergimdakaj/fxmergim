@@ -38,6 +38,9 @@ import {
   Calendar,
   Layers,
   ArrowRight,
+  Sliders,
+  Check,
+  X,
 } from 'lucide-react';
 
 export default function App() {
@@ -47,6 +50,10 @@ export default function App() {
   // Active Asset Page State: XAUUSD, EURUSD, GBPUSD, USDJPY
   const [activeAssetId, setActiveAssetId] = useState<AssetId>('XAUUSD');
   const activeAssetConfig = ASSETS_REGISTRY[activeAssetId];
+
+  // Global TradingView Exact Price Sync Modal
+  const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
+  const [syncPriceInput, setSyncPriceInput] = useState<string>('');
 
   // Independent per-asset candle datasets so they never mix
   const [candlesMap, setCandlesMap] = useState<Record<AssetId, Candle[]>>(() => ({
@@ -288,10 +295,35 @@ export default function App() {
               <span className="text-slate-400">Win Rate:</span>
               <span className="text-emerald-400 font-bold">{activeStrategy === 'ICT' ? `${currentStats.winRate}%` : '94%'}</span>
             </div>
+            <div className="h-4 w-px bg-slate-800" />
+            <button
+              id="sync-tradingview-header-btn"
+              onClick={() => {
+                setSyncPriceInput(livePrice.toFixed(activeAssetConfig.decimals));
+                setShowSyncModal(true);
+              }}
+              title="Përputh çmimin ekzakt 100% me TradingView"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 border border-sky-500/40 text-xs font-bold transition-all shadow-sm"
+            >
+              <Sliders className="w-3 h-3 text-sky-400" />
+              <span>Përputh me TV</span>
+            </button>
           </div>
 
           {/* Right Controls: PWA Install, Sound, Reset */}
           <div className="flex items-center gap-2">
+            <button
+              id="sync-tradingview-mobile-btn"
+              onClick={() => {
+                setSyncPriceInput(livePrice.toFixed(activeAssetConfig.decimals));
+                setShowSyncModal(true);
+              }}
+              title="Përputh me TradingView"
+              className="lg:hidden p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-sky-400 hover:text-white transition-colors"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+            </button>
+
             <PWAInstallButton />
 
             <button
@@ -413,6 +445,130 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* TradingView Exact Price Sync Modal */}
+        {showSyncModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-slate-900 border-2 border-sky-500/60 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                    <Sliders className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-black text-white">
+                      Përputhje 100% me TradingView ({activeAssetConfig.symbol})
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Sinkronizo çmimin ekzaktësisht me atë që shihni në TradingView
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300">
+                  Shkruani çmimin aktual në TradingView:
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-mono text-sm">
+                    {activeAssetConfig.currencySymbol}
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={syncPriceInput}
+                    onChange={(e) => setSyncPriceInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-base font-bold focus:border-sky-500 outline-none"
+                    placeholder={livePrice.toFixed(activeAssetConfig.decimals)}
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Shembull: Nëse TradingView shfaq <strong>{activeAssetId === 'XAUUSD' ? '4355.00' : '1.08500'}</strong>, shkruani <strong>{activeAssetId === 'XAUUSD' ? '4355.00' : '1.08500'}</strong>.
+                </p>
+              </div>
+
+              {/* Quick adjust step buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] text-slate-400 font-bold mr-1">Rregullim i Shpejtë:</span>
+                <button
+                  onClick={() => {
+                    const curr = parseFloat(syncPriceInput) || livePrice;
+                    const step = activeAssetConfig.decimals === 4 ? 0.0010 : 1.0;
+                    setSyncPriceInput((curr - step).toFixed(activeAssetConfig.decimals));
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+                >
+                  -{activeAssetConfig.decimals === 4 ? '10p' : '1.00$'}
+                </button>
+                <button
+                  onClick={() => {
+                    const curr = parseFloat(syncPriceInput) || livePrice;
+                    const step = activeAssetConfig.decimals === 4 ? 0.0005 : 0.50;
+                    setSyncPriceInput((curr - step).toFixed(activeAssetConfig.decimals));
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+                >
+                  -{activeAssetConfig.decimals === 4 ? '5p' : '0.50$'}
+                </button>
+                <button
+                  onClick={() => {
+                    const curr = parseFloat(syncPriceInput) || livePrice;
+                    const step = activeAssetConfig.decimals === 4 ? 0.0005 : 0.50;
+                    setSyncPriceInput((curr + step).toFixed(activeAssetConfig.decimals));
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+                >
+                  +{activeAssetConfig.decimals === 4 ? '5p' : '0.50$'}
+                </button>
+                <button
+                  onClick={() => {
+                    const curr = parseFloat(syncPriceInput) || livePrice;
+                    const step = activeAssetConfig.decimals === 4 ? 0.0010 : 1.0;
+                    setSyncPriceInput((curr + step).toFixed(activeAssetConfig.decimals));
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+                >
+                  +{activeAssetConfig.decimals === 4 ? '10p' : '1.00$'}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                <button
+                  onClick={() => {
+                    const p = parseFloat(syncPriceInput);
+                    if (!isNaN(p) && p > 0) {
+                      marketPriceService.syncExactWithTradingView(activeAssetId, p);
+                      setShowSyncModal(false);
+                    }
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-sky-500/30 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Përputh 100% Tani</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    marketPriceService.resetOffset(activeAssetId);
+                    setShowSyncModal(false);
+                  }}
+                  className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition-all"
+                  title="Rivendos çmimin nga burimi i papërpunuar"
+                >
+                  Rivendos Feed
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content Area */}

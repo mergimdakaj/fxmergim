@@ -279,6 +279,7 @@ export const MSNRDashboard: React.FC<MSNRDashboardProps> = ({
             onSelectAsset(assetId);
             setActiveSubTab('chart_analysis');
           }}
+          onNavigateToCalendar={() => setActiveSubTab('calendar')}
           livePrices={livePrices}
           currencySymbols={{
             XAUUSD: '$',

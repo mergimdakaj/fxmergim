@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DEFAULT_MSNR_CALENDAR_TRADES } from '../../data/msnrCalendarData';
+import { getTodayDateStr } from '../../services/msnrCalendarService';
 import {
   Calendar as CalendarIcon,
   TrendingUp,
@@ -118,9 +119,27 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
     }
   });
 
+  // Listen to calendar updates from MSNRRadar or other components in real-time
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const saved = localStorage.getItem('msnr_custom_calendar_trades');
+        setCustomTrades(saved ? JSON.parse(saved) : {});
+      } catch {
+        setCustomTrades({});
+      }
+    };
+    window.addEventListener('msnr_calendar_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('msnr_calendar_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
   // Modal for adding manual trade
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [newTradeDate, setNewTradeDate] = useState<string>('2026-09-18');
+  const [newTradeDate, setNewTradeDate] = useState<string>(() => getTodayDateStr());
   const [newTradeType, setNewTradeType] = useState<'BUY' | 'SELL'>('SELL');
   const [newTradeAsset, setNewTradeAsset] = useState<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY'>('XAUUSD');
   const [newTradeSetup, setNewTradeSetup] = useState<string>('Target Sweep (TS) M15 Wick Entry');
@@ -559,7 +578,8 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
       const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
 
       const trades = filteredTradesMap[dateStr] || [];
-      const isToday = dateStr === '2026-09-18';
+      const todayStr = getTodayDateStr();
+      const isToday = dateStr === todayStr || dateStr === '2026-09-20' || dateStr === '2026-09-18';
 
       result.push({
         dateStr,

@@ -13,6 +13,7 @@ import {
 import { Candle, ICTTrade } from '../types/trading';
 import { OfficialTradingViewWidget } from './OfficialTradingViewWidget';
 import { calculateICTTradeManagement } from '../utils/ictTradeManagement';
+import { marketPriceService } from '../services/marketPriceService';
 import {
   Maximize2,
   Minimize2,
@@ -601,12 +602,40 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
             <button
               onClick={() => {
-                if (onCalibratePrice) onCalibratePrice(4379.20);
-                setCustomPriceInput('4379.20');
+                const current = parseFloat(customPriceInput) || livePrice;
+                const newP = Number((current - 1).toFixed(decimals));
+                setCustomPriceInput(newP.toFixed(decimals));
+                if (onCalibratePrice) onCalibratePrice(newP);
               }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono border border-slate-700"
+              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+              title="Zbrit 1 dollar/njësi"
             >
-              Reset 4379.20
+              -1.00
+            </button>
+
+            <button
+              onClick={() => {
+                const current = parseFloat(customPriceInput) || livePrice;
+                const newP = Number((current + 1).toFixed(decimals));
+                setCustomPriceInput(newP.toFixed(decimals));
+                if (onCalibratePrice) onCalibratePrice(newP);
+              }}
+              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
+              title="Shto 1 dollar/njësi"
+            >
+              +1.00
+            </button>
+
+            <button
+              onClick={() => {
+                const assetKey = symbol.includes('EUR') ? 'EURUSD' : symbol.includes('GBP') ? 'GBPUSD' : symbol.includes('JPY') ? 'USDJPY' : 'XAUUSD';
+                marketPriceService.resetOffset(assetKey);
+                setCustomPriceInput(livePrice.toFixed(decimals));
+              }}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs border border-slate-700"
+              title="Rivendos çmimin origjinal nga burimi"
+            >
+              Rivendos Feed
             </button>
           </div>
         </div>
