@@ -55,7 +55,6 @@ interface TradingViewChartProps {
   timeframe: string;
   setTimeframe: (tf: string) => void;
   priceSourceLabel?: string;
-  onCalibratePrice?: (price: number) => void;
   symbol?: string;
   decimals?: number;
 }
@@ -69,8 +68,7 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
   isLive,
   timeframe,
   setTimeframe,
-  priceSourceLabel = 'GoldAPI.io Real-Time Spot',
-  onCalibratePrice,
+  priceSourceLabel = 'TradingView TVC:GOLD (Live)',
   symbol = 'OANDA:XAUUSD',
   decimals = 2,
 }) => {
@@ -88,8 +86,6 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
   const [showMarkers, setShowMarkers] = useState(true);
   const [showTvIctOverlay, setShowTvIctOverlay] = useState(true);
   const [copiedText, setCopiedText] = useState(false);
-  const [showCalibrateMenu, setShowCalibrateMenu] = useState(false);
-  const [customPriceInput, setCustomPriceInput] = useState<string>(livePrice.toFixed(decimals));
 
   const [showMultiTps, setShowMultiTps] = useState<boolean>(true);
   const [showMt4Modal, setShowMt4Modal] = useState<boolean>(false);
@@ -143,11 +139,6 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
         return '5';
     }
   };
-
-  // Sync custom input whenever livePrice changes externally
-  useEffect(() => {
-    setCustomPriceInput(livePrice.toFixed(2));
-  }, [livePrice]);
 
   // Initialize Lightweight Chart (kept active for instant switching)
   useEffect(() => {
@@ -486,14 +477,6 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     }
   }, [selectedTrade, focusTrade, chartMode]);
 
-  const handleApplyCalibration = () => {
-    const val = parseFloat(customPriceInput);
-    if (!isNaN(val) && val > 1000 && onCalibratePrice) {
-      onCalibratePrice(val);
-      setShowCalibrateMenu(false);
-    }
-  };
-
   return (
     <div
       id="tradingview-chart-wrapper"
@@ -549,97 +532,8 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
             <option value="CAPITALCOM:GOLD">CAPITAL.COM (Gold Spot)</option>
             <option value="BINANCE:PAXGUSDT">BINANCE (PAXG/USDT Gold)</option>
           </select>
-
-          {/* Calibrate / Sync Price Button */}
-          <button
-            id="calibrate-price-toggle-btn"
-            onClick={() => setShowCalibrateMenu(!showCalibrateMenu)}
-            title="Përputh çmimin ekzakt me brokerin tënd"
-            className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all ${
-              showCalibrateMenu
-                ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden md:inline">Kalibro Çmimin</span>
-          </button>
         </div>
       </div>
-
-      {/* Calibration Popup Bar if opened */}
-      {showCalibrateMenu && (
-        <div className="px-4 py-2.5 bg-slate-950/95 border-b border-amber-500/30 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400 font-bold">Sinkronizimi i Çmimit me Brokerin:</span>
-            <span className="text-slate-400">
-              Shkruani çmimin ekzakt që shihni në TradingView/Broker (p.sh. 4379.20):
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <span className="absolute left-2.5 top-1.5 text-slate-500 font-mono">$</span>
-              <input
-                id="custom-price-input"
-                type="number"
-                step="0.01"
-                value={customPriceInput}
-                onChange={(e) => setCustomPriceInput(e.target.value)}
-                className="w-32 pl-6 pr-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs focus:border-amber-500 outline-none"
-                placeholder="4379.00"
-              />
-            </div>
-
-            <button
-              id="apply-calibration-btn"
-              onClick={handleApplyCalibration}
-              className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center gap-1 transition-all"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Zbato
-            </button>
-
-            <button
-              onClick={() => {
-                const current = parseFloat(customPriceInput) || livePrice;
-                const newP = Number((current - 1).toFixed(decimals));
-                setCustomPriceInput(newP.toFixed(decimals));
-                if (onCalibratePrice) onCalibratePrice(newP);
-              }}
-              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
-              title="Zbrit 1 dollar/njësi"
-            >
-              -1.00
-            </button>
-
-            <button
-              onClick={() => {
-                const current = parseFloat(customPriceInput) || livePrice;
-                const newP = Number((current + 1).toFixed(decimals));
-                setCustomPriceInput(newP.toFixed(decimals));
-                if (onCalibratePrice) onCalibratePrice(newP);
-              }}
-              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700"
-              title="Shto 1 dollar/njësi"
-            >
-              +1.00
-            </button>
-
-            <button
-              onClick={() => {
-                const assetKey = symbol.includes('EUR') ? 'EURUSD' : symbol.includes('GBP') ? 'GBPUSD' : symbol.includes('JPY') ? 'USDJPY' : 'XAUUSD';
-                marketPriceService.resetOffset(assetKey);
-                setCustomPriceInput(livePrice.toFixed(decimals));
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs border border-slate-700"
-              title="Rivendos çmimin origjinal nga burimi"
-            >
-              Rivendos Feed
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Chart Middle Control Bar (Live Ticker & Timeframe) */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-slate-950/90 border-b border-slate-800/80 backdrop-blur-md">

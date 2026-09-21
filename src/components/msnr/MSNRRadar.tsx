@@ -434,8 +434,8 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
 
   // Test / Simulate Price Touching Entry Point
   const handleTestPriceTouch = (setup: MSNRRadarSetup) => {
-    // Directly move live market price to the expected entry
-    marketPriceService.setDirectPrice(setup.assetId, setup.expectedEntry);
+    // Momentarily flash price for 3.5 seconds WITHOUT corrupting live market feeds or saving an offset
+    marketPriceService.simulateMomentaryTouch(setup.assetId, setup.expectedEntry, 3500);
     
     // Play entry chime
     if (soundEnabled) soundService.playEntryAlert();
