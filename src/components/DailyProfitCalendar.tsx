@@ -86,7 +86,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
 
   // Modal for adding manual trade
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [newTradeDate, setNewTradeDate] = useState<string>('2026-09-18');
+  const [newTradeDate, setNewTradeDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [newTradeType, setNewTradeType] = useState<'BUY' | 'SELL'>('SELL');
   const [newTradeStatus, setNewTradeStatus] = useState<'TP_HIT' | 'SL_HIT'>('TP_HIT');
   const [newTradePips, setNewTradePips] = useState<number>(82);
@@ -372,10 +375,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
           note: 'Lajmet makroekonomike të orës 15:00 UTC shkaktuan kapjen e SL (-40 pips).',
         },
       ],
-      // Sep 18 (Sot - TODAY!)
+      // Sep 18 (Fri)
       '2026-09-18': [
         {
-          id: 'trade-sot-1',
+          id: 'trade-18-1',
           time: '08:15 UTC',
           type: 'BUY',
           setupName: 'W-Formation Sweep i PDL (4370.80)',
@@ -385,10 +388,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
           tp: 4383.0,
           resultPips: 88,
           status: 'TP_HIT',
-          note: 'Sweep i PDL me qiri Out & In, MSS mbi 4375.50 me FVG. TP 4383.00 u kap me sukses!',
+          note: 'Sweep i PDL me qiri Out & In, MSS mbi 4375.50 me FVG. TP 4383.00 u kap me sukses (+88 pips)!',
         },
         {
-          id: 'trade-sot-2',
+          id: 'trade-18-2',
           time: '14:20 UTC',
           type: 'SELL',
           setupName: 'M-Formation në 4H Supply (4388.00)',
@@ -396,9 +399,38 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
           entry: 4386.4,
           sl: 4390.5,
           tp: 4378.2,
-          resultPips: 78,
+          resultPips: 72,
+          status: 'TP_HIT',
+          note: 'Mori likuiditetin e lartë në 4389.60, MSS theu 4384.20. TP 4378.20 u kap me sukses (+72 pips)!',
+        },
+      ],
+      // Sep 21 (Mon - Sot - TODAY!)
+      '2026-09-21': [
+        {
+          id: 'trade-sot-21-1',
+          time: '08:45 UTC',
+          type: 'BUY',
+          setupName: 'W-Formation Sweep i Asian Lows (4348.50)',
+          session: 'London',
+          entry: 4351.2,
+          sl: 4347.0,
+          tp: 4359.6,
+          resultPips: 84,
+          status: 'TP_HIT',
+          note: 'Sweep me wick në sesionin e Londrës, konfirmim MSS M1 mbi 4353.00 dhe arritje e shpejtë në TP1 (+84 pips)!',
+        },
+        {
+          id: 'trade-sot-21-2',
+          time: '14:30 UTC',
+          type: 'SELL',
+          setupName: 'M-Formation Sweep në 4H Supply (4362.00)',
+          session: 'New York',
+          entry: 4357.8,
+          sl: 4362.8,
+          tp: 4347.8,
+          resultPips: 65,
           status: 'ACTIVE',
-          note: 'Këmba e dytë sweepoi 4389.60, MSS theu 4384.20. Pozicioni aktiv në fitim (+78 pips)!',
+          note: 'Ekzekutim i sotëm live i New York: Çmimi mori likuiditetin e lartë dhe po lëviz drejt TP me +65 pips në fitim aktiv!',
         },
       ],
     };
@@ -407,18 +439,22 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
   // Merge default historical trades with custom user-logged trades and active asset trades
   const allDaysTrades = useMemo(() => {
     const combined: Record<string, CalendarDayTrade[]> = { ...defaultHistoricalTrades };
+    const todayDateKey = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
 
-    // If initialTrades for this asset is provided, map them to Sep 16, 17, 18
+    // If initialTrades for this asset is provided, map them
     if (initialTrades && initialTrades.length > 0) {
       delete combined['2026-09-16'];
       delete combined['2026-09-17'];
-      delete combined['2026-09-18'];
+      delete combined[todayDateKey];
 
       initialTrades.forEach((t) => {
-        let dateKey = '2026-09-18';
+        let dateKey = todayDateKey;
         if (t.day === 'day_before') dateKey = '2026-09-16';
         else if (t.day === 'yesterday') dateKey = '2026-09-17';
-        else if (t.day === 'today') dateKey = '2026-09-18';
+        else if (t.day === 'today') dateKey = todayDateKey;
 
         if (!combined[dateKey]) combined[dateKey] = [];
         combined[dateKey].push({
@@ -451,6 +487,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
   const calendarDays: CalendarDayData[] = useMemo(() => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const result: CalendarDayData[] = [];
+    const todayDateKey = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
 
     const dayNames = ['Dje', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht'];
 
@@ -462,7 +502,7 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
       const dayStr = String(d).padStart(2, '0');
       const dateKey = `${currentYear}-${monthStr}-${dayStr}`;
 
-      const isToday = dateKey === '2026-09-18';
+      const isToday = dateKey === todayDateKey;
       const tradesForDay = allDaysTrades[dateKey] || [];
 
       result.push({
@@ -835,7 +875,7 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
             }}
             className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 font-bold transition-all"
           >
-            Sot (18 Shtator)
+            Sot ({new Date().getDate()} Shtator)
           </button>
         </div>
       </div>

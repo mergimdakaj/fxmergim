@@ -579,7 +579,7 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
 
       const trades = filteredTradesMap[dateStr] || [];
       const todayStr = getTodayDateStr();
-      const isToday = dateStr === todayStr || dateStr === '2026-09-20' || dateStr === '2026-09-18';
+      const isToday = dateStr === todayStr;
 
       result.push({
         dateStr,

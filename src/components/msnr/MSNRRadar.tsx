@@ -3,6 +3,7 @@ import { MSNRRadarSetup, INITIAL_MSNR_RADAR_SETUPS } from '../../data/msnrData';
 import { soundService } from '../../utils/audioAlert';
 import { marketPriceService } from '../../services/marketPriceService';
 import { MSNRCalendarService } from '../../services/msnrCalendarService';
+import { notificationService } from '../../services/notificationService';
 import confetti from 'canvas-confetti';
 import {
   Crosshair,
@@ -32,6 +33,7 @@ import {
   Award,
   X,
   Target,
+  BellRing,
 } from 'lucide-react';
 
 interface MSNRRadarProps {
@@ -60,6 +62,14 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   // Scanning & 1-Minute Auto-Check State
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [autoScanEnabled, setAutoScanEnabled] = useState<boolean>(true);
+  const [autoSaveEntries, setAutoSaveEntries] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('msnr_auto_save_entries');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [countdown, setCountdown] = useState<number>(60);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [lastScanTime, setLastScanTime] = useState<string>(() => new Date().toLocaleTimeString('sq-AL'));
@@ -135,6 +145,28 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
           if (isAtEntry) {
             if (soundEnabled) soundService.playEntryAlert();
             setExecutedSetupId(setup.id);
+
+            // Send notification for entry
+            notificationService.sendNotification({
+              title: `⚡ HYRJE SNIPER MSNR: ${setup.symbol} (${setup.type})!`,
+              body: `Çmimi arriti në pikën e hyrjes ${setup.expectedEntry}! SL: ${setup.sl10Pips} (-10p fiks) | TP1: ${setup.targetTp1}. ${autoSaveEntries ? 'U ruajt automatikisht në Kalendar.' : ''}`,
+              type: 'ENTRY',
+              price: setup.expectedEntry,
+            });
+
+            // Auto-save to calendar if enabled
+            if (autoSaveEntries && !registeredSetups[setup.id]) {
+              const recorded = MSNRCalendarService.recordRadarTradeToCalendar(setup, 'ACTIVE');
+              setRegisteredSetups((prev) => ({
+                ...prev,
+                [setup.id]: {
+                  outcome: 'ACTIVE',
+                  pips: recorded.resultPips10,
+                  time: recorded.time,
+                },
+              }));
+            }
+
             return {
               ...setup,
               distancePips: roundedDist,
@@ -192,6 +224,58 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
 
     return () => clearInterval(timer);
   }, [autoScanEnabled, livePrices, soundEnabled]);
+
+  // Real-time market price monitor for touching expectedEntry
+  useEffect(() => {
+    setSetupsList((prevSetups) => {
+      let changed = false;
+      const updated = prevSetups.map((setup) => {
+        const currentPrice = livePrices[setup.assetId] ?? marketPriceService.getCalibratedPrice(setup.assetId);
+        const pipSize = getPipSize(setup.assetId);
+        const dist = Math.abs(currentPrice - setup.expectedEntry) / pipSize;
+        const roundedDist = parseFloat(dist.toFixed(1));
+
+        if (roundedDist <= 0.4 && setup.progressPercent < 100) {
+          changed = true;
+          setExecutedSetupId(setup.id);
+          if (soundEnabled) soundService.playEntryAlert();
+
+          notificationService.sendNotification({
+            title: `⚡ HYRJE SNIPER E RE: ${setup.symbol} (${setup.type})!`,
+            body: `Çmimi arriti në pikën e hyrjes ${setup.expectedEntry}! SL: ${setup.sl10Pips} (-10p fiks) | TP1: ${setup.targetTp1}. ${autoSaveEntries ? 'U ruajt automatikisht në Kalendar.' : ''}`,
+            type: 'ENTRY',
+            price: setup.expectedEntry,
+          });
+
+          if (autoSaveEntries && !registeredSetups[setup.id]) {
+            const recorded = MSNRCalendarService.recordRadarTradeToCalendar(setup, 'ACTIVE');
+            setRegisteredSetups((prev) => ({
+              ...prev,
+              [setup.id]: {
+                outcome: 'ACTIVE',
+                pips: recorded.resultPips10,
+                time: recorded.time,
+              },
+            }));
+            setScanMessage(`🎯 Çmimi kapi hyrjen (${setup.expectedEntry})! U RUAJT AUTOMATIKISHT në Kalendarin e Fitimeve!`);
+            setTimeout(() => setScanMessage(null), 8000);
+          }
+
+          return {
+            ...setup,
+            distancePips: 0.0,
+            progressPercent: 100,
+            waitingOnlyForEntry: false,
+            currentStepDescription: `🎯 ÇMIMI PREKU HYRJEN (${setup.expectedEntry}) TANI NË KOHË REALE! Urdhri Sniper u aktivizua. Stop Loss 10 pips fiks (${setup.sl10Pips})!`,
+            confirmations: setup.confirmations?.map((c) => ({ ...c, confirmed: true })),
+          };
+        }
+        return setup;
+      });
+
+      return changed ? updated : prevSetups;
+    });
+  }, [livePrices, autoSaveEntries, soundEnabled, registeredSetups]);
 
   // Generate new candidate setup based on current market state
   const handleGenerateNewSetup = () => {
@@ -357,6 +441,27 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
     if (soundEnabled) soundService.playEntryAlert();
     setExecutedSetupId(setup.id);
 
+    // Send push / web notification!
+    notificationService.sendNotification({
+      title: `⚡ HYRJE SNIPER: ${setup.symbol} (${setup.type})!`,
+      body: `Çmimi arriti në hyrje (${setup.expectedEntry})! SL 10p fiks në ${setup.sl10Pips} | TP: ${setup.targetTp1}. ${autoSaveEntries ? 'U ruajt automatikisht në Kalendar.' : ''}`,
+      type: 'ENTRY',
+      price: setup.expectedEntry,
+    });
+
+    // Auto-save to calendar if enabled
+    if (autoSaveEntries && !registeredSetups[setup.id]) {
+      const recorded = MSNRCalendarService.recordRadarTradeToCalendar(setup, 'ACTIVE');
+      setRegisteredSetups((prev) => ({
+        ...prev,
+        [setup.id]: {
+          outcome: 'ACTIVE',
+          pips: recorded.resultPips10,
+          time: recorded.time,
+        },
+      }));
+    }
+
     // Update setup state to 100% triggered
     setSetupsList((prev) =>
       prev.map((s) => {
@@ -374,7 +479,7 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
       })
     );
 
-    setScanMessage(`🎯 Çmimi i tregut u lëviz në hyrje (${setup.expectedEntry})! Urdhri Sniper në ${setup.symbol} u aktivizua! Regjistrojeni në Kalendar më poshtë.`);
+    setScanMessage(`🎯 Çmimi i tregut u lëviz në hyrje (${setup.expectedEntry})! Urdhri Sniper në ${setup.symbol} u aktivizua ${autoSaveEntries ? 'dhe u RUAJT në Kalendar' : ''}!`);
     setTimeout(() => setScanMessage(null), 8000);
 
     // Prompt user to immediately record to calendar as WIN (+50p), LOSS (-10p), or ACTIVE
@@ -479,6 +584,48 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
           >
             <Timer className={`w-3.5 h-3.5 ${autoScanEnabled ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
             <span>Auto-Kontroll 1m: {autoScanEnabled ? `${countdown}s` : 'Fikur'}</span>
+          </button>
+
+          {/* Auto-Save Entries Toggle */}
+          <button
+            id="msnr-toggle-autosave-btn"
+            onClick={() => {
+              const next = !autoSaveEntries;
+              setAutoSaveEntries(next);
+              try {
+                localStorage.setItem('msnr_auto_save_entries', String(next));
+              } catch {}
+              setScanMessage(
+                next
+                  ? '✅ Ruajtja Automatike u Aktivizua: Çdo hyrje që preket do të ruhet direkt në Kalendarin e Fitimeve!'
+                  : '⚠️ Ruajtja Automatike u çaktivizua. Hyrjet duhet të ruhen manualisht.'
+              );
+              setTimeout(() => setScanMessage(null), 5000);
+            }}
+            title="Kur është aktive, sa herë që çmimi prek pikën e hyrjes, tregtia ruhet automatikisht në Kalendarin e Fitimeve"
+            className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
+              autoSaveEntries
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
+                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Ruaj Hyrjet Automatikisht: {autoSaveEntries ? 'ON' : 'OFF'}</span>
+          </button>
+
+          {/* Test Notification Button */}
+          <button
+            id="msnr-test-notif-btn"
+            onClick={async () => {
+              const res = await notificationService.testNotification();
+              setScanMessage(res.message);
+              setTimeout(() => setScanMessage(null), 7000);
+            }}
+            title="Dërgo një njoftim provë në telefon ose kompjuter për të testuar Vercel"
+            className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <BellRing className="w-3.5 h-3.5 text-purple-400" />
+            <span>Testo Njoftimin</span>
           </button>
 
           {/* Sound Toggle */}

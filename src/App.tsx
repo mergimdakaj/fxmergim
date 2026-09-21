@@ -100,6 +100,25 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'chart_analysis' | 'anticipation_radar' | 'daily_calendar' | 'live_alerts' | 'rules_guide'>('chart_analysis');
   const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
+  const [inAppToast, setInAppToast] = useState<{
+    title: string;
+    body: string;
+    type?: string;
+    price?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleEntryNotif = (e: any) => {
+      if (e.detail) {
+        setInAppToast(e.detail);
+        setTimeout(() => {
+          setInAppToast((prev) => (prev === e.detail ? null : prev));
+        }, 9000);
+      }
+    };
+    window.addEventListener('app_entry_notification', handleEntryNotif);
+    return () => window.removeEventListener('app_entry_notification', handleEntryNotif);
+  }, []);
 
   // Active Asset's current data
   const currentCandles = candlesMap[activeAssetId] || [];
@@ -573,6 +592,64 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 flex-1">
+        {/* Real-time In-App Entry Alert Notification */}
+        {inAppToast && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-sky-950 border-2 border-emerald-500 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 shrink-0 animate-bounce">
+                <BellRing className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-black tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Njoftim Live Hyrjeje
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {new Date().toLocaleTimeString('sq-AL')}
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-white mt-1">{inAppToast.title}</h4>
+                <p className="text-xs text-slate-300 mt-0.5">{inAppToast.body}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => {
+                  if (activeStrategy === 'MSNR_LIT') {
+                    // Handled inside MSNR
+                  } else {
+                    setActiveTab('anticipation_radar');
+                  }
+                  setInAppToast(null);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-black transition-all"
+              >
+                Hap Radarin
+              </button>
+              <button
+                onClick={() => {
+                  if (activeStrategy === 'MSNR_LIT') {
+                    // Navigate to calendar
+                  } else {
+                    setActiveTab('daily_calendar');
+                  }
+                  setInAppToast(null);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all"
+              >
+                Kalendari i Fitimeve
+              </button>
+              <button
+                onClick={() => setInAppToast(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeStrategy === 'MSNR_LIT' ? (
           <MSNRDashboard
             activeAssetId={activeAssetId}
