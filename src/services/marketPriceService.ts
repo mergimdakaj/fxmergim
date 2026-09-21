@@ -1,5 +1,6 @@
 // Real-time Multi-Asset Price Service connected directly to TradingView Live Market Feeds
 import { AssetId, ASSETS_REGISTRY } from '../data/multiAssetData';
+import { customPriceTriggerService } from './customPriceTriggerService';
 
 export interface AssetPriceData {
   assetId: AssetId;
@@ -132,12 +133,21 @@ class MarketPriceService {
   }
 
   private notify(assetId: AssetId, source: 'tradingview-live' | 'live-api' | 'binance-spot' | 'simulated' = 'tradingview-live') {
+    const calibratedPrice = this.getCalibratedPrice(assetId);
+
+    // Evaluate custom price alerts across any monitored asset in real-time
+    try {
+      customPriceTriggerService.evaluatePrice(assetId, calibratedPrice);
+    } catch {
+      // ignore
+    }
+
     const set = this.listeners.get(assetId);
     if (!set || set.size === 0) return;
 
     const data: AssetPriceData = {
       assetId,
-      price: this.getCalibratedPrice(assetId),
+      price: calibratedPrice,
       source,
       sourceLabel: this.getSourceLabel(assetId),
       timestamp: Date.now(),

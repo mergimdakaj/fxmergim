@@ -11,6 +11,8 @@ import { PWAInstallButton } from './components/PWAInstallButton';
 import { EntryAnticipationRadar } from './components/EntryAnticipationRadar';
 import { DailyProfitCalendar } from './components/DailyProfitCalendar';
 import { MSNRDashboard } from './components/msnr/MSNRDashboard';
+import { CustomPriceTriggerModal } from './components/CustomPriceTriggerModal';
+import { customPriceTriggerService } from './services/customPriceTriggerService';
 import { soundService } from './utils/audioAlert';
 import { marketPriceService, AssetPriceData } from './services/marketPriceService';
 import confetti from 'canvas-confetti';
@@ -95,12 +97,23 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'chart_analysis' | 'anticipation_radar' | 'daily_calendar' | 'live_alerts' | 'rules_guide'>('chart_analysis');
   const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
+  const [priceTriggerModalOpen, setPriceTriggerModalOpen] = useState(false);
+  const [activeTriggersCount, setActiveTriggersCount] = useState<number>(() => {
+    return customPriceTriggerService.getActiveTriggers().length;
+  });
   const [inAppToast, setInAppToast] = useState<{
     title: string;
     body: string;
     type?: string;
     price?: number;
   } | null>(null);
+
+  useEffect(() => {
+    const unsub = customPriceTriggerService.subscribe((triggers) => {
+      setActiveTriggersCount(triggers.filter((t) => t.active && !t.triggered).length);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const handleEntryNotif = (e: any) => {
@@ -317,8 +330,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Controls: PWA Install, Sound, Reset */}
+          {/* Right Controls: Price Alert, PWA Install, Sound, Reset */}
           <div className="flex items-center gap-2">
+            {/* Custom Price Trigger Modal Button */}
+            <button
+              id="header-price-alert-btn"
+              onClick={() => setPriceTriggerModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 transition-all shadow-sm"
+              title="Vendos alarm me çmim dhe zë të personalizuar"
+            >
+              <BellRing className="w-3.5 h-3.5 text-amber-400" />
+              <span>Alarm Çmimi</span>
+              {activeTriggersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] flex items-center justify-center">
+                  {activeTriggersCount}
+                </span>
+              )}
+            </button>
+
             <PWAInstallButton />
 
             <button
@@ -918,6 +947,15 @@ export default function App() {
             : `MSNR LIT Strategy Platform (Trade with Abjeed) • ${activeAssetConfig.name} @ ${activeAssetConfig.currencySymbol}${livePrice.toFixed(activeAssetConfig.decimals)} • MSNR Alchemist, Liquidity Inducement Theory, M15 POI > Entry M1, SL 10 PIPS FIXED.`}
         </p>
       </footer>
+
+      {/* Global Custom Price Alert & Sound Modal */}
+      <CustomPriceTriggerModal
+        isOpen={priceTriggerModalOpen}
+        onClose={() => setPriceTriggerModalOpen(false)}
+        activeAssetId={activeAssetId}
+        livePrice={livePrice}
+        onSelectAsset={(assetId) => setActiveAssetId(assetId)}
+      />
     </div>
   );
 }

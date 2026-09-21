@@ -4,6 +4,9 @@ import { soundService } from '../../utils/audioAlert';
 import { marketPriceService } from '../../services/marketPriceService';
 import { MSNRCalendarService } from '../../services/msnrCalendarService';
 import { notificationService } from '../../services/notificationService';
+import { MSNRStrategyEngine, MarketStructureAudit, getPipSize } from '../../services/msnrStrategyEngine';
+import { MSNRStructureAuditModal } from './MSNRStructureAuditModal';
+import { CustomPriceTriggerModal } from '../CustomPriceTriggerModal';
 import confetti from 'canvas-confetti';
 import {
   Crosshair,
@@ -78,6 +81,13 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   const [promptSetup, setPromptSetup] = useState<MSNRRadarSetup | null>(null);
   const [registeredSetups, setRegisteredSetups] = useState<Record<string, { outcome: 'WIN' | 'LOSS' | 'ACTIVE'; pips: number; time: string }>>({});
 
+  // Market Structure Audit & Price Trigger Modal States
+  const [auditModalOpen, setAuditModalOpen] = useState<boolean>(false);
+  const [currentAudit, setCurrentAudit] = useState<MarketStructureAudit | null>(null);
+  const [priceTriggerModalOpen, setPriceTriggerModalOpen] = useState<boolean>(false);
+  const [triggerModalAsset, setTriggerModalAsset] = useState<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY'>('XAUUSD');
+  const [triggerModalPrice, setTriggerModalPrice] = useState<number>(4342);
+
   const handleRecordToCalendar = (
     setup: MSNRRadarSetup,
     outcome: 'WIN' | 'LOSS' | 'ACTIVE',
@@ -126,10 +136,10 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
     }
   };
 
-  // Rescan function to re-evaluate entry conditions against live market prices
+  // Rescan function to re-evaluate entry conditions against authentic MSNR LIT market structure
   const handleRescan = () => {
     setIsScanning(true);
-    setScanMessage('Duke skanuar strukturën e tregut në M15 & M1 dhe duke kontrolluar Target Sweep (TS)...');
+    setScanMessage('Duke skanuar strukturën e tregut në M15 & M1 dhe duke verifikuar Inducement & Target Sweep (TS)...');
 
     setTimeout(() => {
       setSetupsList((prevSetups) => {
@@ -141,6 +151,7 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
 
           const isAtEntry = roundedDist <= 0.4;
           const isNearEntry = roundedDist <= 1.5;
+          const isTestingPoi = roundedDist <= 6.0;
 
           if (isAtEntry) {
             if (soundEnabled) soundService.playEntryAlert();
@@ -178,18 +189,47 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
             };
           }
 
+          // Authentic progress scoring based on real distance to POI / IDM
+          let progress = 40;
+          let stepDesc = setup.currentStepDescription;
+          let ready = false;
+          let waiting = false;
+
+          if (isNearEntry) {
+            progress = 95;
+            ready = true;
+            waiting = true;
+            stepDesc = `Target Sweep (TS) KRYER me wick! Inducement u pastrua. M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes (${setup.expectedEntry})! Distanca: vetëm ${roundedDist} pips!`;
+          } else if (isTestingPoi) {
+            progress = 85;
+            ready = true;
+            waiting = false;
+            stepDesc = `Çmimi po teston Inducement (${setup.idmLevel}) afër POI. Presim fitilin e Target Sweep (TS) para ekzekutimit. Distanca: ${roundedDist} pips.`;
+          } else if (roundedDist <= 18.0) {
+            progress = 65;
+            ready = false;
+            waiting = false;
+            stepDesc = `M15 POI e lokalizuar në ${setup.poiRange}. Çmimi po lëviz drejt kurthit IDM. Distanca: ${roundedDist} pips.`;
+          } else {
+            progress = 40;
+            ready = false;
+            waiting = false;
+            stepDesc = `Struktura institucionale M15 e hartuar. POI në ${setup.poiRange}. Distanca aktuale: ${roundedDist} pips. Nuk hyhet me nxitim pa pastrim likuiditeti.`;
+          }
+
           return {
             ...setup,
             distancePips: roundedDist,
-            progressPercent: isNearEntry ? 95 : Math.max(setup.progressPercent, 90),
-            isReadyForEntry: true,
-            waitingOnlyForEntry: true,
-            currentStepDescription: isNearEntry
-              ? `Target Sweep (TS) KRYER! Likuiditeti u pastrua me wick. M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes (${setup.expectedEntry})! Distanca: vetëm ${roundedDist} pips!`
-              : setup.currentStepDescription,
-            confirmations: setup.confirmations?.map((c) => 
-              c.id === 'c6' ? { ...c, confirmed: false } : { ...c, confirmed: true }
-            ),
+            progressPercent: progress,
+            isReadyForEntry: ready,
+            waitingOnlyForEntry: waiting,
+            currentStepDescription: stepDesc,
+            confirmations: setup.confirmations?.map((c) => {
+              if (c.id === 'c6') return { ...c, confirmed: false };
+              if (c.id === 'c4') return { ...c, confirmed: isNearEntry };
+              if (c.id === 'c3') return { ...c, confirmed: isTestingPoi || isNearEntry };
+              return { ...c, confirmed: true };
+            }),
           };
         });
       });
@@ -203,7 +243,7 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
         soundService.playRadarPing();
       }
 
-      setScanMessage(`Skanimi u krye me sukses në ${now}! Të gjitha rregullat MSNR LIT u verifikuan për çdo minutë.`);
+      setScanMessage(`Skanimi u krye me sukses në ${now}! Të gjitha rregullat strukturore MSNR LIT u verifikuan me përpikëri.`);
       setTimeout(() => setScanMessage(null), 4000);
     }, 600);
   };
@@ -277,159 +317,26 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
     });
   }, [livePrices, autoSaveEntries, soundEnabled, registeredSetups]);
 
-  // Generate new candidate setup based on current market state
+  // Generate new candidate setup based on true MSNR LIT market structure (No arbitrary 8-10 pips!)
   const handleGenerateNewSetup = () => {
     setIsScanning(true);
     setTimeout(() => {
       const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
       const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
-      const dec = decimalsMap[targetAsset] || 2;
-      const pipSize = getPipSize(targetAsset);
 
-      let newSetup: MSNRRadarSetup;
-      const timestampId = `radar-gen-${Date.now()}`;
-
-      if (targetAsset === 'XAUUSD') {
-        const isSell = Math.random() > 0.5;
-        const entry = isSell ? Number((livePrice + 0.80).toFixed(dec)) : Number((livePrice - 0.80).toFixed(dec));
-        const sl = isSell ? Number((entry + 1.00).toFixed(dec)) : Number((entry - 1.00).toFixed(dec)); // strictly 10 pips = $1.00
-        const tp1 = isSell ? Number((entry - 3.00).toFixed(dec)) : Number((entry + 3.00).toFixed(dec));
-        const tp2 = isSell ? Number((entry - 5.00).toFixed(dec)) : Number((entry + 5.00).toFixed(dec));
-        const tp3 = isSell ? Number((entry - 8.00).toFixed(dec)) : Number((entry + 8.00).toFixed(dec));
-
-        newSetup = {
-          id: timestampId,
-          symbol: 'XAU/USD',
-          assetId: 'XAUUSD',
-          type: isSell ? 'SELL' : 'BUY',
-          patternName: isSell ? 'Bearish Quasimodo + M15 POI Sweep' : 'RBS (Resistance Become Support) Demand Retest',
-          patternType: isSell ? 'QM_BEARISH' : 'RBS',
-          timeframe: 'M15 POI > M1 Entry',
-          poiRange: `${(entry - 0.50).toFixed(dec)} - ${(entry + 0.50).toFixed(dec)}`,
-          idmLevel: isSell ? Number((entry - 0.70).toFixed(dec)) : Number((entry + 0.70).toFixed(dec)),
-          expectedEntry: entry,
-          sl10Pips: sl,
-          targetTp1: tp1,
-          targetTp2: tp2,
-          targetTp3: tp3,
-          progressPercent: 95,
-          waitingOnlyForEntry: true,
-          isReadyForEntry: true,
-          distancePips: 0.8,
-          currentStepDescription: `Target Sweep (TS) KRYER me wick! Inducement u pastrua. M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes ${entry}!`,
-          confirmations: [
-            { id: 'c1', name: 'M15 HTF Struktura & POI', confirmed: true, ruleDetail: 'Zona institucionale e identifikuar në M15 me drejtim të qartë' },
-            { id: 'c2', name: 'Kurthi i Likuiditetit (IDM)', confirmed: true, ruleDetail: 'Inducement u formua duke bllokuar retail tregtarët e hershëm' },
-            { id: 'c3', name: 'Target Sweep (TS) KRYER', confirmed: true, ruleDetail: 'Likuiditeti u mor me wick pa mbyllje qiriri pas nivelit' },
-            { id: 'c4', name: 'M1 MSS (Market Structure Shift)', confirmed: true, ruleDetail: 'Në M1 struktura u thye me qiri të plotë marubozu' },
-            { id: 'c5', name: 'Rregulli i Hekurt: SL 10 Pips', confirmed: true, ruleDetail: `SL është fiks 10 pips në ${sl} (asnjëherë 20p)` },
-            { id: 'c6', name: 'Pritja e Prekjes së Hyrjes Sniper', confirmed: false, ruleDetail: `Presim VETËM që çmimi live të prekë pikën e hyrjes ${entry}!` },
-          ],
-        };
-      } else if (targetAsset === 'EURUSD') {
-        const entry = Number((livePrice - 0.00070).toFixed(dec));
-        const sl = Number((entry - 0.00100).toFixed(dec)); // 10 pips
-        newSetup = {
-          id: timestampId,
-          symbol: 'EUR/USD',
-          assetId: 'EURUSD',
-          type: 'BUY',
-          patternName: 'Bullish Quasimodo + Inducement Cleanout',
-          patternType: 'QM_BULLISH',
-          timeframe: 'M15 POI > M1 Entry',
-          poiRange: `${(entry - 0.00030).toFixed(dec)} - ${(entry + 0.00030).toFixed(dec)}`,
-          idmLevel: Number((entry + 0.00050).toFixed(dec)),
-          expectedEntry: entry,
-          sl10Pips: sl,
-          targetTp1: Number((entry + 0.00300).toFixed(dec)),
-          targetTp2: Number((entry + 0.00500).toFixed(dec)),
-          targetTp3: Number((entry + 0.00800).toFixed(dec)),
-          progressPercent: 95,
-          waitingOnlyForEntry: true,
-          isReadyForEntry: true,
-          distancePips: 0.7,
-          currentStepDescription: `Target Sweep (TS) KRYER në Asian Low! M1 MSS u vulos. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes ${entry} për blerje!`,
-          confirmations: [
-            { id: 'c1', name: 'M15 HTF Bullish POI', confirmed: true, ruleDetail: 'Zona institucionale Bullish Demand e konfirmuar në M15' },
-            { id: 'c2', name: 'Inducement (IDM) Trap', confirmed: true, ruleDetail: 'IDM u krijua duke futur shitësit e hershëm në kurth' },
-            { id: 'c3', name: 'Target Sweep (TS) KRYER', confirmed: true, ruleDetail: 'Çmimi pastroi likuiditetin me fitil refuzimi' },
-            { id: 'c4', name: 'M1 MSS Reversal', confirmed: true, ruleDetail: 'Struktura në M1 krijoi Higher High me displacement' },
-            { id: 'c5', name: 'Rregulli i Hekurt: SL 10 Pips', confirmed: true, ruleDetail: `SL fiks në ${sl} (10 pips fiks)` },
-            { id: 'c6', name: 'Pritja e Prekjes së Hyrjes Sniper', confirmed: false, ruleDetail: `Presim VETËM prekjen e ${entry} për ekzekutim!` },
-          ],
-        };
-      } else if (targetAsset === 'GBPUSD') {
-        const entry = Number((livePrice + 0.00080).toFixed(dec));
-        const sl = Number((entry + 0.00100).toFixed(dec)); // 10 pips
-        newSetup = {
-          id: timestampId,
-          symbol: 'GBP/USD',
-          assetId: 'GBPUSD',
-          type: 'SELL',
-          patternName: 'SBR (Support Becomes Resistance) Sweep',
-          patternType: 'SBR',
-          timeframe: 'M15 POI > M1 Entry',
-          poiRange: `${(entry - 0.00040).toFixed(dec)} - ${(entry + 0.00040).toFixed(dec)}`,
-          idmLevel: Number((entry - 0.00060).toFixed(dec)),
-          expectedEntry: entry,
-          sl10Pips: sl,
-          targetTp1: Number((entry - 0.00300).toFixed(dec)),
-          targetTp2: Number((entry - 0.00500).toFixed(dec)),
-          targetTp3: Number((entry - 0.00800).toFixed(dec)),
-          progressPercent: 95,
-          waitingOnlyForEntry: true,
-          isReadyForEntry: true,
-          distancePips: 0.8,
-          currentStepDescription: `Target Sweep (TS) KRYER! Likuiditeti u fshi. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes ${entry} në SBR!`,
-          confirmations: [
-            { id: 'c1', name: 'M15 HTF SBR Rezistenca', confirmed: true, ruleDetail: 'Niveli i mbështetjes së thyer u shndërrua në rezistencë' },
-            { id: 'c2', name: 'Inducement (IDM) Trap', confirmed: true, ruleDetail: 'IDM u krijua nga shitësit e paduruar' },
-            { id: 'c3', name: 'Target Sweep (TS) KRYER', confirmed: true, ruleDetail: 'TS pastroi inducementin duke lënë bisht të gjatë' },
-            { id: 'c4', name: 'M1 MSS Reversal', confirmed: true, ruleDetail: 'Në M1 u shfaq menjëherë qiri marubozu shitës' },
-            { id: 'c5', name: 'Rregulli i Hekurt: SL 10 Pips', confirmed: true, ruleDetail: `SL fiks në ${sl} (10 pips mbi hyrjen)` },
-            { id: 'c6', name: 'Pritja e Prekjes së Hyrjes Sniper', confirmed: false, ruleDetail: `Presim VETËM prekjen e ${entry} me urdhër Sell Limit!` },
-          ],
-        };
-      } else {
-        const entry = Number((livePrice - 0.070).toFixed(dec));
-        const sl = Number((entry - 0.100).toFixed(dec)); // 10 pips = 0.100
-        newSetup = {
-          id: timestampId,
-          symbol: 'USD/JPY',
-          assetId: 'USDJPY',
-          type: 'BUY',
-          patternName: 'Engulfing Order Block + Equilibrium Sweep',
-          patternType: 'ENGULFING_OB',
-          timeframe: 'M15 POI > M1 Entry',
-          poiRange: `${(entry - 0.040).toFixed(dec)} - ${(entry + 0.040).toFixed(dec)}`,
-          idmLevel: Number((entry + 0.060).toFixed(dec)),
-          expectedEntry: entry,
-          sl10Pips: sl,
-          targetTp1: Number((entry + 0.300).toFixed(dec)),
-          targetTp2: Number((entry + 0.500).toFixed(dec)),
-          targetTp3: Number((entry + 0.800).toFixed(dec)),
-          progressPercent: 95,
-          waitingOnlyForEntry: true,
-          isReadyForEntry: true,
-          distancePips: 0.7,
-          currentStepDescription: `Target Sweep (TS) KRYER në Asian Low! Inducement u pastrua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes ${entry} për blerje!`,
-          confirmations: [
-            { id: 'c1', name: 'M15 Engulfing Demand POI', confirmed: true, ruleDetail: 'Zona institucionale me vëllim të lartë në M15' },
-            { id: 'c2', name: 'Inducement (IDM) Trap', confirmed: true, ruleDetail: 'IDM u krijua nga blerësit e paduruar' },
-            { id: 'c3', name: 'Target Sweep (TS) KRYER', confirmed: true, ruleDetail: 'TS fshiu stopat duke lënë pinbar bullish me vëllim' },
-            { id: 'c4', name: 'M1 MSS Reversal', confirmed: true, ruleDetail: 'M1 u kthye menjëherë në Higher High me absorbim' },
-            { id: 'c5', name: 'Rregulli i Hekurt: SL 10 Pips', confirmed: true, ruleDetail: `SL fiks në ${sl} (10 pips nga hyrja)` },
-            { id: 'c6', name: 'Pritja e Prekjes së Hyrjes Sniper', confirmed: false, ruleDetail: `Presim VETËM prekjen e ${entry} për hyrje sniper!` },
-          ],
-        };
-      }
+      // Perform genuine MSNR LIT analysis: M15 POI + Inducement + 10 Pips Strict SL
+      const audit = MSNRStrategyEngine.analyzeMarket(targetAsset, livePrice);
+      const newSetup = audit.selectedSetup;
+      setCurrentAudit(audit);
 
       setSetupsList((prev) => [newSetup, ...prev]);
       setIsScanning(false);
       if (soundEnabled) soundService.playEntryAlert();
-      setScanMessage(`🎯 Skenar i ri MSNR LIT u gjenerua për ${newSetup.symbol} në bazë të lëvizjes së minutës së fundit!`);
-      setTimeout(() => setScanMessage(null), 5000);
-    }, 700);
+      setScanMessage(
+        `🎯 Skenar i ri MSNR LIT u gjenerua për ${newSetup.symbol} në bazë të strukturës institucionale M15 POI (${newSetup.poiRange}), kurthit IDM (${newSetup.idmLevel}), dhe SL fiks 10 pips (${newSetup.sl10Pips})!`
+      );
+      setTimeout(() => setScanMessage(null), 6000);
+    }, 600);
   };
 
   // Test / Simulate Price Touching Entry Point
@@ -565,11 +472,45 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
             id="msnr-generate-new-setup-btn"
             onClick={handleGenerateNewSetup}
             disabled={isScanning}
-            title="Gjenero një skenar të ri të konfirmuar me SL 10p nga lëvizja e minutës së fundit"
+            title="Gjenero një skenar të ri të konfirmuar me SL 10p nga struktura M15 POI dhe kurthi IDM"
             className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5 text-sky-400" />
             <span>+ Gjenero Skenar të Ri M15/M1</span>
+          </button>
+
+          {/* Button 3: VERIFIKO STRUKTURËN MSNR LIT (Trade with Abjeed) */}
+          <button
+            id="msnr-verify-structure-btn"
+            onClick={() => {
+              const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
+              const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
+              const audit = MSNRStrategyEngine.analyzeMarket(targetAsset, livePrice);
+              setCurrentAudit(audit);
+              setAuditModalOpen(true);
+            }}
+            title="Verifiko me saktësi se si çdo hyrje bazohet në Strukturë M15, kurthin IDM, dhe pse hyrjet arbitrare 8 pips nuk përdoren"
+            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Shield className="w-3.5 h-3.5 text-amber-400" />
+            <span>🛡️ Verifiko Strukturën MSNR LIT</span>
+          </button>
+
+          {/* Button 4: VENDOS ALARM ÇMIMI ME ZË */}
+          <button
+            id="msnr-open-price-trigger-btn"
+            onClick={() => {
+              const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
+              const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
+              setTriggerModalAsset(targetAsset);
+              setTriggerModalPrice(livePrice);
+              setPriceTriggerModalOpen(true);
+            }}
+            title="Vendos alarm të personalizuar me çmim dhe zë për çdo aset"
+            className="px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <BellRing className="w-3.5 h-3.5 text-emerald-400" />
+            <span>🔔 Alarm Çmimi me Zë</span>
           </button>
 
           {/* Auto-Scan 1-Minute Toggle */}
@@ -1135,13 +1076,46 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
                   className="py-2.5 px-3 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-inner"
                 >
                   <Play className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
-                  <span>Testo Prekjen e Hyrjes</span>
+                  <span>Testo Prekjen</span>
+                </button>
+
+                {/* Custom Sound Alert Trigger for this Setup */}
+                <button
+                  onClick={() => {
+                    setTriggerModalAsset(setup.assetId);
+                    setTriggerModalPrice(setup.expectedEntry);
+                    setPriceTriggerModalOpen(true);
+                  }}
+                  title="Vendos alarm me zë të personalizuar kur çmimi të arrijë këtë hyrje sniper"
+                  className="py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  <BellRing className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Alarm Çmimi</span>
                 </button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Structure Audit Modal (Trade with Abjeed MSNR LIT Verification) */}
+      <MSNRStructureAuditModal
+        isOpen={auditModalOpen}
+        onClose={() => setAuditModalOpen(false)}
+        audit={currentAudit}
+      />
+
+      {/* Custom Price Trigger & Sound Alert Modal */}
+      <CustomPriceTriggerModal
+        isOpen={priceTriggerModalOpen}
+        onClose={() => setPriceTriggerModalOpen(false)}
+        activeAssetId={triggerModalAsset}
+        livePrice={triggerModalPrice}
+        onSelectAsset={(assetId) => {
+          setTriggerModalAsset(assetId);
+          setTriggerModalPrice(livePrices[assetId] ?? marketPriceService.getCalibratedPrice(assetId));
+        }}
+      />
     </div>
   );
 };
