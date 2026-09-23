@@ -198,6 +198,7 @@ export const MSNRDashboard: React.FC<MSNRDashboardProps> = ({
               symbol={activeAssetId === 'XAUUSD' ? 'XAU/USD' : activeAssetId === 'EURUSD' ? 'EUR/USD' : activeAssetId === 'GBPUSD' ? 'GBP/USD' : 'USDJPY'}
               decimals={decimals}
               currencySymbol={currencySymbol}
+              assetId={activeAssetId}
             />
           </div>
 
