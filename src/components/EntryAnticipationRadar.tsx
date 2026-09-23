@@ -33,6 +33,8 @@ import {
   PlusCircle,
   CheckCheck,
   Sparkles,
+  Trash2,
+  AlertOctagon,
 } from 'lucide-react';
 
 interface EntryAnticipationRadarProps {
@@ -64,92 +66,92 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
   const defaultSetups: AnticipationSetup[] = useMemo(
     () => [
       {
-        id: 'setup-1-sell-4388',
-        name: 'M-Formation SELL në 4H Supply Zone',
+        id: 'setup-1-sell-4338',
+        name: 'M-Formation SELL në 4H Supply ($4338.50)',
         type: 'SELL',
-        status: 'ENTRY_READY',
-        statusLabel: '100% - Gati për Hyrje (E Konfirmuar)',
-        htfPoiLevel: 4388.0,
-        htfPoiLabel: '4H Bearish Supply POI ($4388.00)',
-        expectedSweepLevel: 4389.6,
-        expectedMssLevel: 4384.2,
-        projectedEntry: 4386.4,
-        projectedSl: 4390.5,
-        projectedTp: 4378.2,
-        riskPips: 41,
-        targetPips: 82,
+        status: 'MSS_WAIT',
+        statusLabel: '75% - MSS Ndodhi me Trup (Presim Retest në FVG)',
+        htfPoiLevel: 4338.5,
+        htfPoiLabel: '4H Bearish Supply POI ($4338.50)',
+        expectedSweepLevel: 4340.2,
+        expectedMssLevel: 4335.5,
+        projectedEntry: 4337.2,
+        projectedSl: 4341.2,
+        projectedTp: 4329.2,
+        riskPips: 40,
+        targetPips: 80,
         rrRatio: 2.0,
-        stepCurrent: 4,
-        stepDescription: 'Të 4 hapat u kryen: Zona u prek, fitili i Sweep kapi likuiditetin në 4389.60, MSS theu me trup 4384.20. Hyrja aktive në Retest FVG 4386.40!',
-        triggerDistancePips: 0,
-        slPlacementGuide: 'Vendoset në $4390.50 (41 pips / +$4.10) — saktësisht 0.90$ mbi fitilin e dytë më të lartë të Sweep ($4389.60) për mbrojtje nga spread.',
-        tpPlacementGuide: 'Vendoset në $4378.20 (82 pips / -$8.20) — raport fiks 1:2 R:R sipas rregullit ICT.',
+        stepCurrent: 3,
+        stepDescription: 'MSS theu strukturën në 4335.50 me trup qiriri të fuqishëm. Po presim retest në Premium FVG 4337.20 për hyrje në shitje me SL të mbrojtur!',
+        triggerDistancePips: 27,
+        slPlacementGuide: 'Vendoset në $4341.20 (40 pips / +$4.00) — 1.00$ mbi fitilin më të lartë të Sweep ($4340.20) për mbrojtje absolute nga spread.',
+        tpPlacementGuide: 'Vendoset në $4329.20 (80 pips / -$8.00) — raport fiks 1:2 R:R drejt Sell-Side Liquidity.',
       },
       {
-        id: 'setup-4-buy-4375',
-        name: 'London Open FVG Retest BUY pas MSS',
+        id: 'setup-2-buy-4328',
+        name: 'London Low Sweep W-Formation BUY ($4328.00)',
         type: 'BUY',
         status: 'MSS_WAIT',
         statusLabel: '75% - MSS Ndodhi me Trup (PËRGATITU, presim Retest!)',
-        htfPoiLevel: 4374.0,
-        htfPoiLabel: 'London Session Low POI ($4374.00)',
-        expectedSweepLevel: 4372.2,
-        expectedMssLevel: 4377.5,
-        projectedEntry: 4375.2,
-        projectedSl: 4371.4,
-        projectedTp: 4382.8,
-        riskPips: 38,
-        targetPips: 76,
+        htfPoiLevel: 4328.0,
+        htfPoiLabel: 'London Session Low POI ($4328.00)',
+        expectedSweepLevel: 4326.4,
+        expectedMssLevel: 4331.2,
+        projectedEntry: 4329.5,
+        projectedSl: 4325.5,
+        projectedTp: 4337.5,
+        riskPips: 40,
+        targetPips: 80,
         rrRatio: 2.0,
         stepCurrent: 3,
-        stepDescription: 'MSS theu strukturën në 4377.50 me qiri të fuqishëm me trup. Presim kthimin e ngadaltë (Retest) në FVG në 4375.20.',
-        triggerDistancePips: 45,
-        slPlacementGuide: 'Vendoset në $4371.40 (38 pips / -$3.80) — saktësisht 0.80$ nën pikën më të ulët të fitilit të Sweep ($4372.20).',
-        tpPlacementGuide: 'Vendoset në $4382.80 (76 pips / +$7.60) — raport fiks 1:2 R:R.',
+        stepDescription: 'MSS theu strukturën në 4331.20 me qiri të fuqishëm me trup. Presim kthimin e ngadaltë (Retest) në Discount FVG në 4329.50.',
+        triggerDistancePips: 48,
+        slPlacementGuide: 'Vendoset në $4325.50 (40 pips / -$4.00) — saktësisht 0.90$ nën pikën më të ulët të fitilit të Sweep ($4326.40).',
+        tpPlacementGuide: 'Vendoset në $4337.50 (80 pips / +$8.00) — raport fiks 1:2 R:R.',
       },
       {
-        id: 'setup-3-sell-4395',
-        name: 'Daily High Liquidity Sweep ($4395.00) Reversal SELL',
+        id: 'setup-3-sell-4345',
+        name: 'Daily High Liquidity Sweep ($4345.00) Reversal SELL',
         type: 'SELL',
         status: 'SWEEP_WAIT',
         statusLabel: '50% - U bë Sweep i Likuiditetit (MOS U FUT, presim MSS!)',
-        htfPoiLevel: 4395.0,
-        htfPoiLabel: 'Previous Day High ($4395.00)',
-        expectedSweepLevel: 4396.2,
-        expectedMssLevel: 4391.0,
-        projectedEntry: 4392.8,
-        projectedSl: 4397.0,
-        projectedTp: 4384.4,
-        riskPips: 42,
-        targetPips: 84,
+        htfPoiLevel: 4345.0,
+        htfPoiLabel: 'Previous Day High ($4345.00)',
+        expectedSweepLevel: 4346.8,
+        expectedMssLevel: 4342.0,
+        projectedEntry: 4343.8,
+        projectedSl: 4347.8,
+        projectedTp: 4335.8,
+        riskPips: 40,
+        targetPips: 80,
         rrRatio: 2.0,
         stepCurrent: 2,
-        stepDescription: 'Çmimi bëri fitil mbi 4395.00 dhe u mbyll brenda. MOS U FUT akoma sepse mungon MSS me trup qiriri për të vërtetuar kthimin!',
-        triggerDistancePips: 158,
-        slPlacementGuide: 'Vendoset në $4397.00 (42 pips / +$4.20) — saktësisht 0.80$ mbi majën e fitilit të Sweep ($4396.20). Vendoset vetëm pasi të ndodhë MSS!',
-        tpPlacementGuide: 'Vendoset në $4384.40 (84 pips / -$8.40) — raport fiks 1:2 R:R.',
+        stepDescription: 'Çmimi bëri fitil mbi 4345.00 dhe u mbyll brenda. MOS U FUT akoma sepse mungon MSS me trup qiriri për të vërtetuar kthimin!',
+        triggerDistancePips: 95,
+        slPlacementGuide: 'Vendoset në $4347.80 (40 pips / +$4.00) — 1.00$ mbi majën e fitilit të Sweep ($4346.80). Vendoset vetëm pasi të ndodhë MSS!',
+        tpPlacementGuide: 'Vendoset në $4335.80 (80 pips / -$8.00) — raport fiks 1:2 R:R.',
       },
       {
-        id: 'setup-2-buy-4371',
-        name: 'W-Formation BUY në 1H Bullish Demand Zone',
+        id: 'setup-4-buy-4322',
+        name: 'W-Formation BUY në 1H Bullish Demand ($4322.00)',
         type: 'BUY',
         status: 'POI_WAIT',
         statusLabel: '25% - Vetëm POI Prekje (MOS U FUT, mungon Sweep dhe MSS!)',
-        htfPoiLevel: 4371.0,
-        htfPoiLabel: '1H Bullish Demand POI ($4371.00)',
-        expectedSweepLevel: 4368.5,
-        expectedMssLevel: 4374.0,
-        projectedEntry: 4372.5,
-        projectedSl: 4367.8,
-        projectedTp: 4381.9,
-        riskPips: 47,
-        targetPips: 94,
+        htfPoiLevel: 4322.0,
+        htfPoiLabel: '1H Bullish Demand POI ($4322.00)',
+        expectedSweepLevel: 4320.2,
+        expectedMssLevel: 4325.5,
+        projectedEntry: 4323.5,
+        projectedSl: 4319.5,
+        projectedTp: 4331.5,
+        riskPips: 40,
+        targetPips: 80,
         rrRatio: 2.0,
         stepCurrent: 1,
-        stepDescription: 'Çmimi vetëm sa po prek zonën Demand (4371.00). RREZIK I LARTË po u fute këtu sepse nuk e dimë a do kthehet apo do vazhdojë rënien!',
-        triggerDistancePips: 82,
-        slPlacementGuide: 'Do të vendoset në $4367.80 (47 pips / -$4.70) — saktësisht 0.70$ poshtë fitilit më të ulët të Sweep në W ($4368.50) sapo të kryhet sweep-i.',
-        tpPlacementGuide: 'Vendoset në $4381.90 (94 pips / +$9.40) — raport fiks 1:2 R:R.',
+        stepDescription: 'Çmimi vetëm sa po prek zonën Demand (4322.00). RREZIK I LARTË po u fute këtu sepse nuk e dimë a do kthehet apo do vazhdojë rënien!',
+        triggerDistancePips: 110,
+        slPlacementGuide: 'Do të vendoset në $4319.50 (40 pips / -$4.00) — 0.70$ poshtë fitilit më të ulët të Sweep në W ($4320.20) sapo të kryhet sweep-i.',
+        tpPlacementGuide: 'Vendoset në $4331.50 (80 pips / +$8.00) — raport fiks 1:2 R:R.',
       },
     ],
     []
@@ -157,7 +159,7 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
   const initialSetups = propSetups && propSetups.length > 0 ? propSetups : defaultSetups;
   const [setupsList, setSetupsList] = useState<AnticipationSetup[]>(initialSetups);
-  const [activeSetupId, setActiveSetupId] = useState<string>(initialSetups[0]?.id || 'setup-1-sell-4388');
+  const [activeSetupId, setActiveSetupId] = useState<string>(initialSetups[0]?.id || 'setup-1-sell-4338');
 
   // Sync setupsList when propSetups or active asset changes
   useEffect(() => {
@@ -177,12 +179,32 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
   const [lastScanTime, setLastScanTime] = useState<string>(() => new Date().toLocaleTimeString('sq-AL'));
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [executedSetupId, setExecutedSetupId] = useState<string | null>(null);
-  const [filterMode, setFilterMode] = useState<'ALL' | 'READY' | '75' | 'BUY' | 'SELL'>('ALL');
+  const [filterMode, setFilterMode] = useState<'ACTIVE' | 'ALL' | 'READY' | 'BUY' | 'SELL' | 'INVALID'>('ACTIVE');
 
   const [accountBalance, setAccountBalance] = useState<number>(10000);
   const [riskPercent, setRiskPercent] = useState<number>(1);
   const [alertArmedId, setAlertArmedId] = useState<string | null>(initialSetups[0]?.id || null);
   const [copiedOrder, setCopiedOrder] = useState<boolean>(false);
+
+  // Helper function: accurately evaluate each setup against livePrice
+  const checkSetupStatus = (setup: AnticipationSetup) => {
+    const isSell = setup.type === 'SELL';
+    const distPips = Math.round(Math.abs(livePrice - setup.projectedEntry) * pipMultiplier);
+    // If SELL and livePrice >= SL: Stop Loss was breached (invalidated)
+    // If BUY and livePrice <= SL: Stop Loss was breached (invalidated)
+    const slBreached = isSell ? livePrice >= setup.projectedSl : livePrice <= setup.projectedSl;
+    const slDiff = slBreached
+      ? isSell
+        ? Math.round((livePrice - setup.projectedSl) * pipMultiplier)
+        : Math.round((setup.projectedSl - livePrice) * pipMultiplier)
+      : 0;
+    // If TP hit:
+    const tpHit = isSell ? livePrice <= setup.projectedTp : livePrice >= setup.projectedTp;
+    // Sniper ready (within 2 pips and valid)
+    const isAtEntry = distPips <= 2 && !slBreached && !tpHit;
+
+    return { isSell, distPips, slBreached, slDiff, tpHit, isAtEntry };
+  };
 
   // Selected setup
   const currentSetup = useMemo(
@@ -190,16 +212,39 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
     [setupsList, activeSetupId, defaultSetups]
   );
 
+  // Count invalidated setups
+  const invalidatedCount = useMemo(() => {
+    return setupsList.filter((s) => checkSetupStatus(s).slBreached || checkSetupStatus(s).tpHit).length;
+  }, [setupsList, livePrice, pipMultiplier]);
+
+  // Purge expired / invalidated setups
+  const handleClearInvalidated = () => {
+    setSetupsList((prev) => {
+      const active = prev.filter((s) => {
+        const { slBreached, tpHit } = checkSetupStatus(s);
+        return !slBreached && !tpHit;
+      });
+      if (active.length === 0) {
+        return defaultSetups;
+      }
+      return active;
+    });
+    setScanMessage('🧹 Skenarët e tejkaluar (SL i thyer ose TP e arritur) u pastruan nga lista!');
+    setTimeout(() => setScanMessage(null), 4000);
+  };
+
   // Filtered setups list
   const filteredSetups = useMemo(() => {
     return setupsList.filter((s) => {
-      if (filterMode === 'READY') return s.stepCurrent === 4 || s.status === 'ENTRY_READY';
-      if (filterMode === '75') return s.stepCurrent === 3 || s.status === 'MSS_WAIT';
+      const { slBreached, tpHit, isAtEntry } = checkSetupStatus(s);
+      if (filterMode === 'ACTIVE') return !slBreached && !tpHit;
+      if (filterMode === 'INVALID') return slBreached || tpHit;
+      if (filterMode === 'READY') return isAtEntry || (!slBreached && s.stepCurrent === 4);
       if (filterMode === 'BUY') return s.type === 'BUY';
       if (filterMode === 'SELL') return s.type === 'SELL';
       return true;
     });
-  }, [setupsList, filterMode]);
+  }, [setupsList, filterMode, livePrice, pipMultiplier]);
 
   // Rescan function: checks market conditions against live prices
   const handleRescan = () => {
@@ -209,9 +254,29 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
     setTimeout(() => {
       setSetupsList((prevSetups) => {
         return prevSetups.map((setup) => {
-          const dist = Math.abs(livePrice - setup.projectedEntry) * pipMultiplier;
-          const roundedDist = Math.round(dist);
-          const isAtEntry = roundedDist <= 1; // 1 pip or less from entry
+          const { isSell, distPips, slBreached, slDiff, tpHit, isAtEntry } = checkSetupStatus(setup);
+
+          if (slBreached) {
+            return {
+              ...setup,
+              stepCurrent: 0,
+              status: 'INVALIDATED' as any,
+              statusLabel: `⛔ INVALIDUAR - SL U TEJKALUA (+${slDiff}p)`,
+              triggerDistancePips: distPips,
+              stepDescription: `⛔ SKENAR I PAVLEFSHËM: Çmimi (${currencySymbol}${livePrice.toFixed(decimals)}) kaloi Stop Loss-in (${currencySymbol}${setup.projectedSl.toFixed(decimals)}) me ${slDiff} pips. Ky skenar nuk duhet tregtuar!`,
+            };
+          }
+
+          if (tpHit) {
+            return {
+              ...setup,
+              stepCurrent: 4,
+              status: 'TP_HIT' as any,
+              statusLabel: `✅ TP U ARRIT (+${setup.targetPips}p)`,
+              triggerDistancePips: 0,
+              stepDescription: `✅ Sukses! Çmimi arriti me sukses objektivin TP ${currencySymbol}${setup.projectedTp.toFixed(decimals)}!`,
+            };
+          }
 
           if (isAtEntry) {
             if (soundEnabled) soundService.playEntryAlert();
@@ -222,13 +287,13 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
               status: 'ENTRY_READY',
               statusLabel: '100% - HYRJE E AKTIVIZUAR (SNIPER)',
               triggerDistancePips: 0,
-              stepDescription: `🎯 ÇMIMI PREKU HYRJEN (${setup.projectedEntry.toFixed(decimals)}) TANI NË KOHË REALE! Retest FVG u plotësua. SL fiks në ${setup.projectedSl.toFixed(decimals)} (-${setup.riskPips}p) dhe TP 1:2 në ${setup.projectedTp.toFixed(decimals)}!`,
+              stepDescription: `🎯 ÇMIMI PREKU HYRJEN (${currencySymbol}${setup.projectedEntry.toFixed(decimals)}) TANI NË KOHË REALE! Retest FVG u plotësua. SL fiks në ${currencySymbol}${setup.projectedSl.toFixed(decimals)} (-${setup.riskPips}p) dhe TP 1:2 në ${currencySymbol}${setup.projectedTp.toFixed(decimals)}!`,
             };
           }
 
           return {
             ...setup,
-            triggerDistancePips: roundedDist,
+            triggerDistancePips: distPips,
           };
         });
       });
@@ -640,60 +705,93 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
         )}
       </div>
 
-      {/* FILTER PILLS */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Filtro Skenarët:</span>
-        <button
-          onClick={() => setFilterMode('ALL')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            filterMode === 'ALL'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          Të Gjitha ({setupsList.length})
-        </button>
-        <button
-          onClick={() => setFilterMode('READY')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-            filterMode === 'READY'
-              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          <span>100% Gati për Hyrje ({setupsList.filter((s) => s.stepCurrent === 4).length})</span>
-        </button>
-        <button
-          onClick={() => setFilterMode('75')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            filterMode === '75'
-              ? 'bg-yellow-500 text-slate-950 shadow-md shadow-yellow-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          75% MSS & FVG Retest ({setupsList.filter((s) => s.stepCurrent === 3).length})
-        </button>
-        <button
-          onClick={() => setFilterMode('BUY')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            filterMode === 'BUY'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          BUY ({setupsList.filter((s) => s.type === 'BUY').length})
-        </button>
-        <button
-          onClick={() => setFilterMode('SELL')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            filterMode === 'SELL'
-              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          SELL ({setupsList.filter((s) => s.type === 'SELL').length})
-        </button>
+      {/* FILTER PILLS & PURGE INVALIDATED */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Filtro Skenarët:</span>
+          
+          <button
+            onClick={() => setFilterMode('ACTIVE')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              filterMode === 'ACTIVE'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Vlefshme Tani ({setupsList.filter((s) => !checkSetupStatus(s).slBreached && !checkSetupStatus(s).tpHit).length})</span>
+          </button>
+
+          <button
+            onClick={() => setFilterMode('READY')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              filterMode === 'READY'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>100% Gati për Hyrje ({setupsList.filter((s) => checkSetupStatus(s).isAtEntry || (!checkSetupStatus(s).slBreached && s.stepCurrent === 4)).length})</span>
+          </button>
+
+          <button
+            onClick={() => setFilterMode('BUY')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              filterMode === 'BUY'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            BUY ({setupsList.filter((s) => s.type === 'BUY').length})
+          </button>
+
+          <button
+            onClick={() => setFilterMode('SELL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              filterMode === 'SELL'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            SELL ({setupsList.filter((s) => s.type === 'SELL').length})
+          </button>
+
+          {invalidatedCount > 0 && (
+            <button
+              onClick={() => setFilterMode('INVALID')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                filterMode === 'INVALID'
+                  ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/20'
+                  : 'bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-950/70'
+              }`}
+            >
+              <AlertOctagon className="w-3.5 h-3.5" />
+              <span>Të Invaliduar ({invalidatedCount})</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setFilterMode('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              filterMode === 'ALL'
+                ? 'bg-slate-700 text-white'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            Të Gjitha ({setupsList.length})
+          </button>
+        </div>
+
+        {invalidatedCount > 0 && (
+          <button
+            onClick={handleClearInvalidated}
+            className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            title="Fshin të gjithë skenarët që kanë thyer Stop Loss-in ose kanë kapur TP"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span>Pastro të Pavlefshmit ({invalidatedCount})</span>
+          </button>
+        )}
       </div>
 
       {/* Main Grid: Setups List (Left) & Deep Dive Checklist / Order Planner (Right) */}
@@ -707,35 +805,67 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
           {filteredSetups.map((setup) => {
             const isSelected = setup.id === activeSetupId;
-            const isSell = setup.type === 'SELL';
-            const dist = Math.round(Math.abs(livePrice - setup.projectedEntry) * pipMultiplier);
-            const percent = (setup.stepCurrent / 4) * 100;
+            const { isSell, distPips, slBreached, slDiff, tpHit, isAtEntry } = checkSetupStatus(setup);
 
-            // Security badge styling based on progress percentage
+            // Determine status badge, visual indicators, and progress
             let statusBadge = {
-              text: '100% - HYRJE E SIGURT',
-              bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-              note: 'Të 4 rregullat u plotësuan! Hyrja është e konfirmuar.',
+              text: '100% - HYRJE E SIGURT (SNIPER)',
+              bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 ring-1 ring-emerald-500/30',
+              note: '🎯 Çmimi preku hyrjen! Të 4 rregullat u plotësuan, ekzekuto urdhrin.',
+              displayPercent: 100,
+              barColor: 'bg-emerald-500',
             };
 
-            if (percent === 25) {
+            if (slBreached) {
               statusBadge = {
-                text: '25% - MOS U FUT! (JO E SIGURT)',
-                bg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-                note: 'Vetëm POI u prek. Rrezik i lartë, mungon Sweep dhe MSS!',
+                text: '⛔ INVALIDUAR (SL U TEJKALUA)',
+                bg: 'bg-rose-950/90 text-rose-300 border-rose-600 ring-1 ring-rose-500/50',
+                note: `⚠️ Çmimi (${currencySymbol}${livePrice.toFixed(decimals)}) kaloi Stop Loss-in (${currencySymbol}${setup.projectedSl.toFixed(decimals)}) me +${slDiff} pips. Skenari NUK duhet tregtuar!`,
+                displayPercent: 0,
+                barColor: 'bg-rose-600',
               };
-            } else if (percent === 50) {
+            } else if (tpHit) {
               statusBadge = {
-                text: '50% - MOS U FUT AKOMA!',
-                bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                note: 'U bë Sweep me fitil, por presim MSS me trup qiriri.',
+                text: `✅ TP U ARRIT (+${setup.targetPips}p)`,
+                bg: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60',
+                note: `Objektivi TP (${currencySymbol}${setup.projectedTp.toFixed(decimals)}) u arrit me sukses!`,
+                displayPercent: 100,
+                barColor: 'bg-emerald-500',
               };
-            } else if (percent === 75) {
-              statusBadge = {
-                text: '75% - PËRGATITU (Presim Retest)',
-                bg: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
-                note: 'MSS theu strukturën. Presim kthimin në FVG.',
-              };
+            } else if (!isAtEntry) {
+              if (setup.stepCurrent === 4) {
+                statusBadge = {
+                  text: `⏳ NË PRITJE TË RETEST (${distPips}p)`,
+                  bg: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+                  note: `Hapat 1-3 u kryen. Po presim afrimin në zonën ${currencySymbol}${setup.projectedEntry.toFixed(decimals)}.`,
+                  displayPercent: 85,
+                  barColor: 'bg-sky-500',
+                };
+              } else if (setup.stepCurrent === 3) {
+                statusBadge = {
+                  text: `75% - PËRGATITU (${distPips}p larg)`,
+                  bg: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+                  note: 'MSS theu strukturën me trup qiriri. Presim kthimin në FVG.',
+                  displayPercent: 75,
+                  barColor: 'bg-yellow-400',
+                };
+              } else if (setup.stepCurrent === 2) {
+                statusBadge = {
+                  text: `50% - MOS U FUT AKOMA! (${distPips}p larg)`,
+                  bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                  note: 'U bë Sweep me fitil, por presim MSS me trup qiriri.',
+                  displayPercent: 50,
+                  barColor: 'bg-amber-500',
+                };
+              } else {
+                statusBadge = {
+                  text: `25% - MOS U FUT! (${distPips}p larg)`,
+                  bg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                  note: 'Vetëm POI u prek. Rrezik i lartë, mungon Sweep dhe MSS!',
+                  displayPercent: 25,
+                  barColor: 'bg-rose-500',
+                };
+              }
             }
 
             return (
@@ -744,13 +874,17 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
                 id={`radar-card-${setup.id}`}
                 onClick={() => setActiveSetupId(setup.id)}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
-                  isSelected
+                  slBreached
+                    ? isSelected
+                      ? 'bg-rose-950/40 border-rose-600 shadow-xl shadow-rose-950/20 ring-1 ring-rose-500/40'
+                      : 'bg-rose-950/20 border-rose-900/60 hover:bg-rose-950/30'
+                    : isSelected
                     ? 'bg-slate-900 border-amber-500/50 shadow-xl shadow-amber-500/5 ring-1 ring-amber-500/30'
                     : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/40'
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-amber-500" />
+                  <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${slBreached ? 'bg-rose-500' : 'bg-amber-500'}`} />
                 )}
 
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -776,27 +910,27 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
                 {/* Progress bar of 4 steps */}
                 <div className="mt-2 mb-3">
                   <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                    <span>Progresi i konfirmimit ICT (Hapi {setup.stepCurrent}/4):</span>
+                    <span>
+                      {slBreached
+                        ? '⛔ Struktura ICT: E Pavlefshme (SL u thye)'
+                        : `Progresi i konfirmimit ICT (Hapi ${setup.stepCurrent}/4):`}
+                    </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-amber-400">{dist} pips larg</span>
-                      <span className="font-bold text-white">{percent}%</span>
+                      <span className={`text-[10px] font-mono ${slBreached ? 'text-rose-400 font-bold' : 'text-amber-400'}`}>
+                        {slBreached ? `+${slDiff}p tejkaluar SL` : `${distPips} pips larg`}
+                      </span>
+                      <span className="font-bold text-white">{statusBadge.displayPercent}%</span>
                     </div>
                   </div>
                   <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full transition-all duration-500 ${
-                        percent === 100
-                          ? 'bg-emerald-500'
-                          : percent === 75
-                          ? 'bg-yellow-400'
-                          : percent === 50
-                          ? 'bg-amber-500'
-                          : 'bg-rose-500'
-                      }`}
-                      style={{ width: `${percent}%` }}
+                      className={`h-full transition-all duration-500 ${statusBadge.barColor}`}
+                      style={{ width: `${statusBadge.displayPercent}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 italic">{statusBadge.note}</p>
+                  <p className={`text-[10px] mt-1 italic ${slBreached ? 'text-rose-300 font-medium' : 'text-slate-400'}`}>
+                    {statusBadge.note}
+                  </p>
                 </div>
 
                 {/* Grid: POI, ENTRY, STOP LOSS (SL) & TAKE PROFIT (TP) */}
@@ -842,18 +976,25 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
                 {/* Tactical Actions: Test Price Touch Button */}
                 <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                  <button
-                    id={`test-touch-btn-${setup.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleTestPriceTouch(setup);
-                    }}
-                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
-                    title="Simulon prekjen e nivelit të hyrjes nga çmimi live dhe aktivizon urdhrin"
-                  >
-                    <Zap className="w-3 h-3 text-amber-400" />
-                    <span>Testo Prekjen e Hyrjes ({currencySymbol}{setup.projectedEntry.toFixed(decimals)})</span>
-                  </button>
+                  {slBreached ? (
+                    <div className="flex-1 py-1.5 px-2.5 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1.5">
+                      <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Skenar i Djegur (SL u thye me +${slDiff}p)</span>
+                    </div>
+                  ) : (
+                    <button
+                      id={`test-touch-btn-${setup.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTestPriceTouch(setup);
+                      }}
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                      title="Simulon prekjen e nivelit të hyrjes nga çmimi live dhe aktivizon urdhrin"
+                    >
+                      <Zap className="w-3 h-3 text-amber-400" />
+                      <span>Testo Prekjen e Hyrjes ({currencySymbol}{setup.projectedEntry.toFixed(decimals)})</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={(e) => {
@@ -939,7 +1080,7 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
                   )}
                   <span>{distanceToPoi} pips</span>
                   <span className="text-[10px] text-slate-400 font-normal">
-                    ({Math.abs(livePrice - currentSetup.htfPoiLevel).toFixed(2)}$)
+                    ({Math.abs(livePrice - currentSetup.htfPoiLevel).toFixed(decimals)}$)
                   </span>
                   {distanceToPoi <= 10 && (
                     <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-rose-500 text-slate-950">
@@ -949,6 +1090,37 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* CRITICAL ICT INVALIDATION ALERT IF STOP LOSS WAS BREACHED */}
+            {checkSetupStatus(currentSetup).slBreached && (
+              <div className="p-4 rounded-xl bg-rose-950/70 border-2 border-rose-500/80 flex items-start gap-3 text-xs shadow-lg animate-in fade-in">
+                <AlertOctagon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-black text-rose-200 text-sm uppercase tracking-wide">
+                      ⛔ KUJDES: Skenari është INVALIDUAR / DJEGUR nga Tregu!
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-rose-500 text-slate-950 font-black font-mono text-[10px]">
+                      +{checkSetupStatus(currentSetup).slDiff} pips mbi SL
+                    </span>
+                  </div>
+                  <p className="text-rose-200 leading-relaxed text-[11px]">
+                    Çmimi aktual ({currencySymbol}{livePrice.toFixed(decimals)}) ka tejkaluar Stop Loss-in ({currencySymbol}{currentSetup.projectedSl.toFixed(decimals)}).
+                    Për një urdhër <strong>{currentSetup.type}</strong>, nëse çmimi shkon përtej Stop Loss-it, struktura ICT <strong>është prishur dhe ky urdhër NUK DUHET të vendoset</strong>! Kur çmimi ngjitet më lart, nuk mund të vazhdojmë shitjen me parametrat e vjetër.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={handleClearInvalidated}
+                      className="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-[10px] flex items-center gap-1 transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Fshi këtë skenar të pavlefshëm</span>
+                    </button>
+                    <span className="text-[10px] text-rose-300/80">ose prit skanimin automatik për nivele të reja.</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* LIVE DISTANCE MOVEMENT CONTROLLER & TEST PANEL */}
             <div className="p-3.5 rounded-xl bg-slate-950/90 border border-amber-500/30 space-y-3 shadow-lg">
@@ -1381,20 +1553,44 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
               <button
                 id="copy-full-order-btn"
                 onClick={copyFullOrder}
-                className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
+                disabled={checkSetupStatus(currentSetup).slBreached}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                  checkSetupStatus(currentSetup).slBreached
+                    ? 'bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
                 title="Kopjo parametrat e urdhrit për t'i vendosur në MetaTrader"
               >
                 {copiedOrder ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
-                <span>{copiedOrder ? 'Urdhri u Kopjua!' : 'Kopjo Urdhrin (Entry, SL, TP) për MT4/MT5'}</span>
+                <span>
+                  {checkSetupStatus(currentSetup).slBreached
+                    ? 'Urdhri është i Pavlefshëm (SL u Thye)'
+                    : copiedOrder
+                    ? 'Urdhri u Kopjua!'
+                    : 'Kopjo Urdhrin (Entry, SL, TP) për MT4/MT5'}
+                </span>
               </button>
 
               <button
                 id="trigger-arm-push-btn"
                 onClick={() => toggleArmAlert(currentSetup.id)}
-                className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
+                disabled={checkSetupStatus(currentSetup).slBreached}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md ${
+                  checkSetupStatus(currentSetup).slBreached
+                    ? 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+                    : alertArmedId === currentSetup.id
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
+                }`}
               >
                 <Zap className="w-3.5 h-3.5" />
-                <span>{alertArmedId === currentSetup.id ? 'Alarmi është Aktiv' : 'Prit këtë Hyrje me Njoftim'}</span>
+                <span>
+                  {checkSetupStatus(currentSetup).slBreached
+                    ? 'Alarmi i Çaktivizuar (SL i Thyer)'
+                    : alertArmedId === currentSetup.id
+                    ? 'Alarmi është Aktiv ✓'
+                    : 'Prit këtë Hyrje me Njoftim'}
+                </span>
               </button>
             </div>
           </div>

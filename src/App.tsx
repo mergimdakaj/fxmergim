@@ -78,10 +78,10 @@ export default function App() {
 
   // Live prices per asset
   const [pricesMap, setPricesMap] = useState<Record<AssetId, number>>(() => ({
-    XAUUSD: ASSETS_REGISTRY.XAUUSD.basePrice,
-    EURUSD: ASSETS_REGISTRY.EURUSD.basePrice,
-    GBPUSD: ASSETS_REGISTRY.GBPUSD.basePrice,
-    USDJPY: ASSETS_REGISTRY.USDJPY.basePrice,
+    XAUUSD: marketPriceService.getCalibratedPrice('XAUUSD'),
+    EURUSD: marketPriceService.getCalibratedPrice('EURUSD'),
+    GBPUSD: marketPriceService.getCalibratedPrice('GBPUSD'),
+    USDJPY: marketPriceService.getCalibratedPrice('USDJPY'),
   }));
 
   // Price sources per asset

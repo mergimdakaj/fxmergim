@@ -18,8 +18,8 @@ class MarketPriceService {
   private listeners: Map<AssetId, Set<AssetPriceListener>> = new Map();
   // 100% Real live prices fetched directly from TradingView Live Scanner
   private rawPrices: Record<AssetId, number> = {
-    XAUUSD: 4342.68, // Direct TradingView TVC:GOLD quote
-    EURUSD: 1.1467,  // Direct TradingView FX:EURUSD quote
+    XAUUSD: 4334.50, // Direct TradingView TVC:GOLD quote
+    EURUSD: 1.1476,  // Direct TradingView FX:EURUSD quote
     GBPUSD: 1.3368,  // Direct TradingView FX:GBPUSD quote
     USDJPY: 157.48,  // Direct TradingView FX:USDJPY quote
   };
@@ -289,8 +289,12 @@ class MarketPriceService {
         if (res.ok) {
           const data = await res.json();
           if (data && data.price) {
-            this.rawPrices.EURUSD = Number(Number(data.price).toFixed(4));
-            this.notify('EURUSD', 'binance-spot');
+            const parsed = Number(Number(data.price).toFixed(4));
+            // Only update if it is within reasonable real-world range around current market quote (> 1.10)
+            if (parsed > 1.10) {
+              this.rawPrices.EURUSD = parsed;
+              this.notify('EURUSD', 'binance-spot');
+            }
           }
         }
       } catch {

@@ -220,22 +220,22 @@ export const INITIAL_MSNR_TRADES: Record<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJP
       status: 'ACTIVE',
       timeframeHTF: '15M',
       timeframeLTF: '1M',
-      entryPrice: 1.08450,
-      stopLoss: 1.08350, // 10 pips (0.00100)
+      entryPrice: 1.14760,
+      stopLoss: 1.14660, // 10 pips (0.00100)
       slPips: 10,
-      takeProfit1: 1.08750, // 30 pips (1:3 R:R)
-      takeProfit2: 1.08950, // 50 pips (1:5 R:R)
-      takeProfit3: 1.09250, // 80 pips (1:8 R:R)
-      breakevenPrice: 1.08460,
-      poiHigh: 1.08480,
-      poiLow: 1.08370,
-      idmPrice: 1.08510,
-      tsPrice: 1.08380,
-      qmLevel: 1.08450,
+      takeProfit1: 1.15060, // 30 pips (1:3 R:R)
+      takeProfit2: 1.15260, // 50 pips (1:5 R:R)
+      takeProfit3: 1.15560, // 80 pips (1:8 R:R)
+      breakevenPrice: 1.14770,
+      poiHigh: 1.14790,
+      poiLow: 1.14680,
+      idmPrice: 1.14820,
+      tsPrice: 1.14690,
+      qmLevel: 1.14760,
       patternType: 'QM_BULLISH',
       timestamp: 'Sot, 11:20 - M15 Bullish QM',
       title: 'Bullish Quasimodo + Inducement Liquidity Cleanout',
-      reason: 'Price printed Lower Low into 1.08380 (TS) sweeping retail trendline liquidity, then immediately printed Higher High on M1. Re-test of QM Left Shoulder at 1.08450 with strictly 10 pips SL.',
+      reason: 'Price printed Lower Low into 1.14690 (TS) sweeping retail trendline liquidity, then immediately printed Higher High on M1. Re-test of QM Left Shoulder at 1.14760 with strictly 10 pips SL.',
       checklist: {
         htfPoiIdentified: true,
         inducementCreated: true,
@@ -256,22 +256,22 @@ export const INITIAL_MSNR_TRADES: Record<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJP
       status: 'WIN',
       timeframeHTF: '15M',
       timeframeLTF: '1M',
-      entryPrice: 1.08820,
-      stopLoss: 1.08920, // 10 pips
+      entryPrice: 1.15120,
+      stopLoss: 1.15220, // 10 pips
       slPips: 10,
-      takeProfit1: 1.08520, // 30 pips
-      takeProfit2: 1.08320, // 50 pips
-      takeProfit3: 1.08020, // 80 pips
-      breakevenPrice: 1.08810,
-      poiHigh: 1.08900,
-      poiLow: 1.08800,
-      idmPrice: 1.08740,
-      tsPrice: 1.08890,
-      oclLevel: 1.08820,
+      takeProfit1: 1.14820, // 30 pips
+      takeProfit2: 1.14620, // 50 pips
+      takeProfit3: 1.14320, // 80 pips
+      breakevenPrice: 1.15110,
+      poiHigh: 1.15200,
+      poiLow: 1.15100,
+      idmPrice: 1.15040,
+      tsPrice: 1.15190,
+      oclLevel: 1.15120,
       patternType: 'OCL',
       timestamp: 'Dje, 14:15 - London/NY Overlap Supply',
       title: 'OCL (Open/Close Level) Sweep + Strong Bearish Marubozu',
-      reason: 'Key London high swept with wick TS to 1.08890 taking out retail early sellers. M1 MSS created with impulsive displacement. Full +50 pips TP2 hit at London close.',
+      reason: 'Key London high swept with wick TS to 1.15190 taking out retail early sellers. M1 MSS created with impulsive displacement. Full +50 pips TP2 hit at London close.',
       checklist: {
         htfPoiIdentified: true,
         inducementCreated: true,
@@ -567,16 +567,16 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'Bullish Quasimodo (QM Left Shoulder)',
     patternType: 'QM_BULLISH',
     timeframe: 'M15 POI > M1 Entry',
-    poiRange: '1.08420 - 1.08480',
-    idmLevel: 1.08530,
-    expectedEntry: 1.08450,
-    sl10Pips: 1.08350, // 10 pips
-    targetTp1: 1.08750, // 1:3 R:R
-    targetTp2: 1.08950, // 1:5 R:R
-    targetTp3: 1.09250, // 1:8+ R:R
+    poiRange: '1.14720 - 1.14780',
+    idmLevel: 1.14830,
+    expectedEntry: 1.14760,
+    sl10Pips: 1.14660, // 10 pips
+    targetTp1: 1.15060, // 1:3 R:R
+    targetTp2: 1.15260, // 1:5 R:R
+    targetTp3: 1.15560, // 1:8+ R:R
     progressPercent: 95,
     waitingOnlyForEntry: true,
-    currentStepDescription: 'Target Sweep (TS) preku POI në 1.08380! M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 1.08450 për blerje!',
+    currentStepDescription: 'Target Sweep (TS) preku POI në 1.14690! M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 1.14760 për blerje!',
     isReadyForEntry: true,
     distancePips: 1.2,
     confirmations: [
@@ -584,19 +584,19 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
         id: 'c1',
         name: 'M15 HTF Bullish POI',
         confirmed: true,
-        ruleDetail: 'Zona institucionale Bullish Demand në 1.08420 - 1.08480 e konfirmuar',
+        ruleDetail: 'Zona institucionale Bullish Demand në 1.14720 - 1.14780 e konfirmuar',
       },
       {
         id: 'c2',
         name: 'Inducement (IDM) Trap',
         confirmed: true,
-        ruleDetail: 'IDM u krijua në 1.08530 duke futur retail shitësit në kurth',
+        ruleDetail: 'IDM u krijua në 1.14830 duke futur retail shitësit në kurth',
       },
       {
         id: 'c3',
         name: 'Target Sweep (TS) KRYER',
         confirmed: true,
-        ruleDetail: 'Çmimi depërtoi në 1.08380 duke pastruar Asian Low me fitil refuzimi',
+        ruleDetail: 'Çmimi depërtoi në 1.14690 duke pastruar Asian Low me fitil refuzimi',
       },
       {
         id: 'c4',

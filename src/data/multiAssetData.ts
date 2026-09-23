@@ -63,7 +63,7 @@ function generateForexCandles(
 // ==========================================
 // 1. EUR/USD (Euro / US Dollar) DATA
 // ==========================================
-const eurCandles = generateForexCandles(1.0825, 0.00035, 1);
+const eurCandles = generateForexCandles(1.1450, 0.00035, 1);
 
 const eurTrades: ICTTrade[] = [
   {
@@ -1138,7 +1138,7 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     category: 'Metals',
     description: 'Gold vs US Dollar • 4H/1H POI + Liquidity Sweeps',
     tvSymbol: 'OANDA:XAUUSD',
-    basePrice: 4379.25,
+    basePrice: 4334.50,
     pipMultiplier: 10, // 0.10$ = 1 pip
     decimals: 2,
     currencySymbol: '$',
@@ -1157,7 +1157,7 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     category: 'Forex Major',
     description: 'Euro vs US Dollar • London/NY Killzones + FVG Retest',
     tvSymbol: 'FX:EURUSD',
-    basePrice: 1.0845,
+    basePrice: 1.1476,
     pipMultiplier: 10000, // 0.0001 = 1 pip
     decimals: 4,
     currencySymbol: '$',
@@ -1176,7 +1176,7 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     category: 'Forex Major',
     description: 'British Pound vs Dollar ("JPUSD") • Judas Swing + M/W Setups',
     tvSymbol: 'FX:GBPUSD',
-    basePrice: 1.2942,
+    basePrice: 1.3368,
     pipMultiplier: 10000, // 0.0001 = 1 pip
     decimals: 4,
     currencySymbol: '$',
@@ -1195,7 +1195,7 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     category: 'Forex Major',
     description: 'US Dollar vs Japanese Yen ("JPUSD") • Tokyo/NY Sweeps',
     tvSymbol: 'FX:USDJPY',
-    basePrice: 154.60,
+    basePrice: 157.48,
     pipMultiplier: 100, // 0.01 = 1 pip
     decimals: 2,
     currencySymbol: '¥',
