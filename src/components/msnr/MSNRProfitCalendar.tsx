@@ -26,7 +26,10 @@ import {
   Scale,
   Zap,
   HelpCircle,
+  Calculator,
 } from 'lucide-react';
+import { PositionSizingCalculatorCard } from '../PositionSizingCalculatorCard';
+import { accountBalanceService } from '../../services/accountBalanceService';
 
 export type SLComparisonMode = 'SL_10' | 'SL_20' | 'COMPARE';
 
@@ -92,15 +95,27 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
     }
   }, [symbol]);
 
-  // Currency preference: EUR (€) or USD ($)
-  const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
+  // Account settings synced via accountBalanceService
+  const initialSettings = accountBalanceService.getSettings();
+  const [currency, setCurrency] = useState<'EUR' | 'USD'>(initialSettings.currency);
   const eurUsdRate = 1.08;
 
   // Calculation mode: Fixed lots or % risk
   const [calcMode, setCalcMode] = useState<'LOTS' | 'RISK_PERCENT'>('LOTS');
   const [lotSize, setLotSize] = useState<number>(0.10); // 0.10 lot
-  const [accountBalance, setAccountBalance] = useState<number>(10000); // €10,000
-  const [riskPercent, setRiskPercent] = useState<number>(1); // 1% per trade
+  const [accountBalance, setAccountBalance] = useState<number>(initialSettings.balance);
+  const [riskPercent, setRiskPercent] = useState<number>(initialSettings.riskPercent);
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState<boolean>(true);
+
+  // Synchronize with external account balance and risk updates
+  useEffect(() => {
+    const unsub = accountBalanceService.subscribe((s) => {
+      setAccountBalance(s.balance);
+      setRiskPercent(s.riskPercent);
+      setCurrency(s.currency);
+    });
+    return unsub;
+  }, []);
 
   // Selected day for modal breakdown
   const [selectedDay, setSelectedDay] = useState<MSNRCalendarDayData | null>(null);
@@ -671,6 +686,11 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
     };
   }, [filteredTradesMap, calcMode, lotSize, accountBalance, riskPercent, selectedAssetFilter]);
 
+  // Push MSNR 10-pip SL calendar profits to accountBalanceService
+  useEffect(() => {
+    accountBalanceService.updateCalendarProfit(comparisonStats.profitEur10, comparisonStats.profitUsd10);
+  }, [comparisonStats.profitEur10, comparisonStats.profitUsd10]);
+
   // First day offset for calendar grid
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   // Adjust so Monday is 0, Sunday is 6
@@ -1007,13 +1027,19 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
             </span>
             <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
               <button
-                onClick={() => setCurrency('EUR')}
+                onClick={() => {
+                  setCurrency('EUR');
+                  accountBalanceService.setCurrency('EUR');
+                }}
                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${currency === 'EUR' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'}`}
               >
                 EUR (€)
               </button>
               <button
-                onClick={() => setCurrency('USD')}
+                onClick={() => {
+                  setCurrency('USD');
+                  accountBalanceService.setCurrency('USD');
+                }}
                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${currency === 'USD' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'}`}
               >
                 USD ($)
@@ -1057,7 +1083,11 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
                   <input
                     type="number"
                     value={accountBalance}
-                    onChange={(e) => setAccountBalance(parseFloat(e.target.value) || 1000)}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 1000;
+                      setAccountBalance(val);
+                      accountBalanceService.setBalance(val);
+                    }}
                     className="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-white text-xs font-mono"
                   />
                 </>
@@ -1069,6 +1099,35 @@ export const MSNRProfitCalendar: React.FC<MSNRProfitCalendarProps> = ({
             {calcMode === 'LOTS' ? `1 Pip = ${(lotSize * 10).toFixed(1)}$ / €${((lotSize * 10) / eurUsdRate).toFixed(2)}` : `Rrezik per tregti = €${((accountBalance * riskPercent) / 100).toFixed(0)}`}
           </div>
         </div>
+      </div>
+
+      {/* Position Sizing Calculator Card for 10-Pip SL (MSNR LIT Sniper Rule) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-bold text-slate-300">
+              Llogaritësi i Lotit MSNR LIT (SL 10 Pips &amp; Balanca Live):
+            </span>
+          </div>
+          <button
+            onClick={() => setIsCalculatorVisible(!isCalculatorVisible)}
+            className="text-xs font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 font-bold"
+          >
+            {isCalculatorVisible ? 'Fshih Llogaritësin ▲' : 'Shfaq Llogaritësin ▼'}
+          </button>
+        </div>
+
+        {isCalculatorVisible && (
+          <PositionSizingCalculatorCard
+            currentCalendarBalance={accountBalance}
+            calendarNetProfit={currency === 'EUR' ? comparisonStats.profitEur10 : comparisonStats.profitUsd10}
+            selectedAssetId={selectedAssetFilter === 'ALL' ? 'XAUUSD' : selectedAssetFilter}
+            onAssetChange={(aid) => {
+              if (onSelectAsset) onSelectAsset(aid);
+            }}
+          />
+        )}
       </div>
 
       {/* Calendar Header: Month Switcher & Action */}

@@ -21,8 +21,11 @@ import {
   Shield,
   Target,
   Sliders,
+  Calculator,
 } from 'lucide-react';
 import { ICTTrade } from '../types/trading';
+import { PositionSizingCalculatorCard } from './PositionSizingCalculatorCard';
+import { accountBalanceService } from '../services/accountBalanceService';
 
 export interface CalendarDayTrade {
   id: string;
@@ -57,15 +60,27 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
   initialTrades = [],
   symbol = 'XAU/USD',
 }) => {
-  // Currency preference: EUR (€) or USD ($)
-  const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
+  // Account settings synced via accountBalanceService
+  const initialSettings = accountBalanceService.getSettings();
+  const [currency, setCurrency] = useState<'EUR' | 'USD'>(initialSettings.currency);
   const eurUsdRate = 1.08; // 1 EUR = 1.08 USD (~0.925 EUR per USD)
 
   // Sizing mode: Fixed Lots vs Account Risk %
   const [calcMode, setCalcMode] = useState<'LOTS' | 'RISK_PERCENT'>('LOTS');
   const [lotSize, setLotSize] = useState<number>(0.10); // 0.10 lot (1 pip = $1.00 / €0.92)
-  const [accountBalance, setAccountBalance] = useState<number>(10000); // €10,000
-  const [riskPercent, setRiskPercent] = useState<number>(1); // 1% per trade
+  const [accountBalance, setAccountBalance] = useState<number>(initialSettings.balance);
+  const [riskPercent, setRiskPercent] = useState<number>(initialSettings.riskPercent);
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState<boolean>(true);
+
+  // Subscribe to account balance and risk updates
+  useEffect(() => {
+    const unsub = accountBalanceService.subscribe((s) => {
+      setAccountBalance(s.balance);
+      setRiskPercent(s.riskPercent);
+      setCurrency(s.currency);
+    });
+    return unsub;
+  }, []);
 
   // Selected day for modal breakdown
   const [selectedDay, setSelectedDay] = useState<CalendarDayData | null>(null);
@@ -571,6 +586,11 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
     };
   }, [calendarDays, lotSize, calcMode, accountBalance, riskPercent]);
 
+  // Push calendar profits to accountBalanceService for position sizing calculations
+  useEffect(() => {
+    accountBalanceService.updateCalendarProfit(monthSummary.totalEur, monthSummary.totalUsd);
+  }, [monthSummary.totalEur, monthSummary.totalUsd]);
+
   // Handle adding custom trade
   const handleAddTrade = (e: React.FormEvent) => {
     e.preventDefault();
@@ -641,7 +661,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
           <div className="flex items-center rounded-lg bg-slate-900 p-0.5 border border-slate-700 text-xs font-bold">
             <button
               id="currency-eur-btn"
-              onClick={() => setCurrency('EUR')}
+              onClick={() => {
+                setCurrency('EUR');
+                accountBalanceService.setCurrency('EUR');
+              }}
               className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-all ${
                 currency === 'EUR' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
@@ -651,7 +674,10 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
             </button>
             <button
               id="currency-usd-btn"
-              onClick={() => setCurrency('USD')}
+              onClick={() => {
+                setCurrency('USD');
+                accountBalanceService.setCurrency('USD');
+              }}
               className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-all ${
                 currency === 'USD' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
@@ -710,7 +736,11 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
                 id="balance-select"
                 aria-label="Kapitali i Llogarisë"
                 value={accountBalance}
-                onChange={(e) => setAccountBalance(parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setAccountBalance(val);
+                  accountBalanceService.setBalance(val);
+                }}
                 className="bg-slate-900 text-emerald-400 border border-slate-700 font-bold px-2 py-1 rounded-lg text-xs cursor-pointer focus:outline-none focus:border-emerald-400"
               >
                 <option value={1000}>€1,000 (1% = €10)</option>
@@ -819,6 +849,40 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
             {calcMode === 'LOTS' ? `me ${lotSize} lot` : `nga llogaria €${accountBalance.toLocaleString()}`}
           </span>
         </div>
+      </div>
+
+      {/* Position Sizing Calculator Card (Synced with Calendar Balance & Fixed 10-Pip SL) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-bold text-slate-300">
+              Llogaritësi i Lotit me Balancën e Kalendarit Ditor:
+            </span>
+          </div>
+          <button
+            onClick={() => setIsCalculatorVisible(!isCalculatorVisible)}
+            className="text-xs font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 font-bold"
+          >
+            {isCalculatorVisible ? 'Fshih Llogaritësin ▲' : 'Shfaq Llogaritësin ▼'}
+          </button>
+        </div>
+
+        {isCalculatorVisible && (
+          <PositionSizingCalculatorCard
+            currentCalendarBalance={accountBalance}
+            calendarNetProfit={currency === 'EUR' ? monthSummary.totalEur : monthSummary.totalUsd}
+            selectedAssetId={
+              symbol.includes('EUR')
+                ? 'EURUSD'
+                : symbol.includes('GBP')
+                ? 'GBPUSD'
+                : symbol.includes('JPY')
+                ? 'USDJPY'
+                : 'XAUUSD'
+            }
+          />
+        )}
       </div>
 
       {/* Calendar Month Navigation Header */}

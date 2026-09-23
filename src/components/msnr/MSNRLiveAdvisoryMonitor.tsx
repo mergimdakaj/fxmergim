@@ -48,7 +48,7 @@ export const MSNRLiveAdvisoryMonitor: React.FC<MSNRLiveAdvisoryMonitorProps> = (
   currencySymbol,
   onSimulatePriceChange,
 }) => {
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioMode>('TP1_CONTINUATION');
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioMode>('LIVE');
   const [lotSize, setLotSize] = useState<number>(1.0); // 1.0 lot ($10/pip)
 
   const pipSize = getMsnrPipSize(trade.assetId);

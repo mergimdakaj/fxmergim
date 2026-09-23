@@ -108,23 +108,23 @@ export const INITIAL_MSNR_TRADES: Record<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJP
       status: 'ACTIVE',
       timeframeHTF: '15M',
       timeframeLTF: '1M',
-      entryPrice: 4386.40,
-      stopLoss: 4387.40, // 10 pips ($1.00 on gold)
+      entryPrice: 4337.20,
+      stopLoss: 4338.20, // 10 pips ($1.00 on gold)
       slPips: 10,
-      takeProfit1: 4383.40, // 30 pips (1:3 R:R)
-      takeProfit2: 4381.40, // 50 pips (1:5 R:R)
-      takeProfit3: 4378.40, // 80 pips (1:8 R:R)
-      breakevenPrice: 4386.30,
-      poiHigh: 4388.00,
-      poiLow: 4386.00,
-      idmPrice: 4384.80,
-      tsPrice: 4387.10,
-      qmLevel: 4386.40,
-      oclLevel: 4386.20,
+      takeProfit1: 4334.20, // 30 pips (1:3 R:R)
+      takeProfit2: 4332.20, // 50 pips (1:5 R:R)
+      takeProfit3: 4329.20, // 80 pips (1:8 R:R)
+      breakevenPrice: 4337.10,
+      poiHigh: 4339.00,
+      poiLow: 4337.50,
+      idmPrice: 4335.80,
+      tsPrice: 4338.60,
+      qmLevel: 4337.20,
+      oclLevel: 4337.10,
       patternType: 'QM_BEARISH',
       timestamp: 'Sot, 14:15 - M15 POI Retest',
       title: 'M15 Bearish Quasimodo + TS Inducement Sweep',
-      reason: 'Price created an Inducement at 4384.80 before the M15 Bearish POI. Aggressive Target Sweep (TS) swept IDM to 4387.10, leaving a long upper wick rejection. M1 MSS confirmed bearish shift. Entry at QM level with strict 10 pips SL.',
+      reason: 'Price created an Inducement at 4335.80 before the M15 Bearish POI. Aggressive Target Sweep (TS) swept IDM to 4338.60, leaving a long upper wick rejection. M1 MSS confirmed bearish shift. Entry at QM level with strict 10 pips SL.',
       checklist: {
         htfPoiIdentified: true,
         inducementCreated: true,
@@ -508,54 +508,54 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'Bearish Quasimodo + M15 POI Sweep',
     patternType: 'QM_BEARISH',
     timeframe: 'M15 POI > M1 Entry',
-    poiRange: '4386.00 - 4388.00',
-    idmLevel: 4384.80,
-    expectedEntry: 4386.40,
-    sl10Pips: 4387.40, // 10 pips strictly
-    targetTp1: 4383.40, // 1:3 R:R
-    targetTp2: 4381.40, // 1:5 R:R
-    targetTp3: 4378.40, // 1:8+ R:R
-    progressPercent: 95,
-    waitingOnlyForEntry: true,
-    currentStepDescription: 'Target Sweep (TS) KRYER! Inducement u pastrua me wick. M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 4386.40 (QM Left Shoulder)!',
-    isReadyForEntry: true,
-    distancePips: 0.8,
+    poiRange: '4337.50 - 4339.00',
+    idmLevel: 4335.80,
+    expectedEntry: 4337.20,
+    sl10Pips: 4338.20, // 10 pips strictly ($1.00 on Gold)
+    targetTp1: 4334.20, // 1:3 R:R (30 pips)
+    targetTp2: 4332.20, // 1:5 R:R (50 pips)
+    targetTp3: 4329.20, // 1:8+ R:R (80 pips)
+    progressPercent: 75,
+    waitingOnlyForEntry: false,
+    currentStepDescription: 'M15 Bearish POI në 4337.50 - 4339.00. Çmimi po lëviz drejt IDM 4335.80. Presim Target Sweep (TS) me fitil para hyrjes në 4337.20!',
+    isReadyForEntry: false,
+    distancePips: 27.0,
     confirmations: [
       {
         id: 'c1',
         name: 'M15 HTF Struktura & POI',
         confirmed: true,
-        ruleDetail: 'Zona Bearish POI (4386.00 - 4388.00) e identifikuar në M15 me drejtim të qartë',
+        ruleDetail: 'Zona Bearish POI (4337.50 - 4339.00) e identifikuar në M15 me drejtim të qartë',
       },
       {
         id: 'c2',
         name: 'Kurthi i Likuiditetit (IDM)',
         confirmed: true,
-        ruleDetail: 'Inducement u formua në 4384.80 duke bllokuar retail blerësit e hershëm',
+        ruleDetail: 'Inducement u formua në 4335.80 duke bllokuar retail blerësit e hershëm',
       },
       {
         id: 'c3',
-        name: 'Target Sweep (TS) KRYER',
-        confirmed: true,
-        ruleDetail: 'Likuiditeti u mor me wick në 4387.10 (TS) pa mbyllje qiriri sipër nivelit',
+        name: 'Target Sweep (TS)',
+        confirmed: false,
+        ruleDetail: 'Presim që çmimi të marrë likuiditetin me wick në 4338.60 pa mbyllje qiriri sipër',
       },
       {
         id: 'c4',
         name: 'M1 MSS (Market Structure Shift)',
-        confirmed: true,
-        ruleDetail: 'Në M1 struktura u thye me qiri të plotë marubozu në drejtim shitje',
+        confirmed: false,
+        ruleDetail: 'Në M1 pritet thyerja e strukturës me qiri të plotë marubozu',
       },
       {
         id: 'c5',
         name: 'Rregulli i Hekurt: SL 10 Pips',
         confirmed: true,
-        ruleDetail: 'SL është fiks 10 pips në 4387.40 (asnjëherë 20p apo 30p)',
+        ruleDetail: 'SL është fiks 10 pips në 4338.20 (asnjëherë 20p apo 30p)',
       },
       {
         id: 'c6',
         name: 'Pritja e Prekjes së Hyrjes Sniper',
         confirmed: false,
-        ruleDetail: 'Presim VETËM që çmimi live të prekë pikën e hyrjes 4386.40 për ekzekutim!',
+        ruleDetail: 'Presim prekjen e QM Left Shoulder në 4337.20 pas konfirmimit të TS',
       },
     ],
   },
@@ -567,54 +567,54 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'Bullish Quasimodo (QM Left Shoulder)',
     patternType: 'QM_BULLISH',
     timeframe: 'M15 POI > M1 Entry',
-    poiRange: '1.14720 - 1.14780',
-    idmLevel: 1.14830,
-    expectedEntry: 1.14760,
-    sl10Pips: 1.14660, // 10 pips
-    targetTp1: 1.15060, // 1:3 R:R
-    targetTp2: 1.15260, // 1:5 R:R
-    targetTp3: 1.15560, // 1:8+ R:R
-    progressPercent: 95,
-    waitingOnlyForEntry: true,
-    currentStepDescription: 'Target Sweep (TS) preku POI në 1.14690! M1 MSS u konfirmua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 1.14760 për blerje!',
-    isReadyForEntry: true,
-    distancePips: 1.2,
+    poiRange: '1.14620 - 1.14700',
+    idmLevel: 1.14780,
+    expectedEntry: 1.14650,
+    sl10Pips: 1.14550, // 10 pips (0.00100)
+    targetTp1: 1.14950, // 1:3 R:R
+    targetTp2: 1.15150, // 1:5 R:R
+    targetTp3: 1.15450, // 1:8+ R:R
+    progressPercent: 80,
+    waitingOnlyForEntry: false,
+    currentStepDescription: 'M15 Bullish POI në 1.14620 - 1.14700. Çmimi po afrohet drejt zonës Demand me SL fiks 10 pips.',
+    isReadyForEntry: false,
+    distancePips: 11.0,
     confirmations: [
       {
         id: 'c1',
         name: 'M15 HTF Bullish POI',
         confirmed: true,
-        ruleDetail: 'Zona institucionale Bullish Demand në 1.14720 - 1.14780 e konfirmuar',
+        ruleDetail: 'Zona institucionale Bullish Demand në 1.14620 - 1.14700 e konfirmuar',
       },
       {
         id: 'c2',
         name: 'Inducement (IDM) Trap',
         confirmed: true,
-        ruleDetail: 'IDM u krijua në 1.14830 duke futur retail shitësit në kurth',
+        ruleDetail: 'IDM u krijua në 1.14780 duke futur retail shitësit në kurth',
       },
       {
         id: 'c3',
-        name: 'Target Sweep (TS) KRYER',
+        name: 'Target Sweep (TS)',
         confirmed: true,
-        ruleDetail: 'Çmimi depërtoi në 1.14690 duke pastruar Asian Low me fitil refuzimi',
+        ruleDetail: 'Likuiditeti u sweep-ua në 1.14630 duke lënë fitil refuzimi',
       },
       {
         id: 'c4',
         name: 'M1 MSS Reversal',
-        confirmed: true,
-        ruleDetail: 'Struktura në M1 krijoi Higher High të menjëhershëm me displacement',
+        confirmed: false,
+        ruleDetail: 'Pritet mbyllja e qiririt M1 mbi Higher High',
       },
       {
         id: 'c5',
         name: 'Rregulli i Hekurt: SL 10 Pips',
         confirmed: true,
-        ruleDetail: 'SL fiks në 1.08350 (0.00100 nga hyrja, mbrojtje maksimale)',
+        ruleDetail: 'SL fiks në 1.14550 (0.00100 nga hyrja, mbrojtje maksimale)',
       },
       {
         id: 'c6',
         name: 'Pritja e Prekjes së Hyrjes Sniper',
         confirmed: false,
-        ruleDetail: 'Presim VETËM prekjen e 1.08450 në QM Left Shoulder për hyrje!',
+        ruleDetail: 'Presim prekjen e 1.14650 në QM Left Shoulder për hyrje!',
       },
     ],
   },
@@ -626,54 +626,54 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'SBR + Asian Range Liquidity Sweep',
     patternType: 'SBR',
     timeframe: 'M15 POI > M1 Entry',
-    poiRange: '1.29400 - 1.29520',
-    idmLevel: 1.29310,
-    expectedEntry: 1.29420,
-    sl10Pips: 1.29520, // 10 pips
-    targetTp1: 1.29120, // 1:3 R:R
-    targetTp2: 1.28920, // 1:5 R:R
-    targetTp3: 1.28620, // 1:8+ R:R
-    progressPercent: 95,
-    waitingOnlyForEntry: true,
-    currentStepDescription: 'Target Sweep (TS) KRYER në 1.29490! IDM u pastrua plotësisht. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 1.29420 në SBR!',
-    isReadyForEntry: true,
-    distancePips: 1.5,
+    poiRange: '1.33800 - 1.33920',
+    idmLevel: 1.33550,
+    expectedEntry: 1.33820,
+    sl10Pips: 1.33920, // 10 pips
+    targetTp1: 1.33520, // 1:3 R:R
+    targetTp2: 1.33320, // 1:5 R:R
+    targetTp3: 1.33020, // 1:8+ R:R
+    progressPercent: 75,
+    waitingOnlyForEntry: false,
+    currentStepDescription: 'M15 SBR Rezistenca në 1.33800 - 1.33920. Presim Target Sweep mbi Asian High para hyrjes në 1.33820!',
+    isReadyForEntry: false,
+    distancePips: 14.0,
     confirmations: [
       {
         id: 'c1',
         name: 'M15 HTF SBR Rezistenca',
         confirmed: true,
-        ruleDetail: 'Niveli i mbështetjes së thyer në 1.29420 u shndërrua në rezistencë SBR',
+        ruleDetail: 'Niveli i mbështetjes së thyer në 1.33820 u shndërrua në rezistencë SBR',
       },
       {
         id: 'c2',
         name: 'Inducement (IDM) Trap',
         confirmed: true,
-        ruleDetail: 'Retail shitësit u futën herët në 1.29310 duke krijuar inducement likuiditeti',
+        ruleDetail: 'Retail shitësit u futën herët në 1.33550 duke krijuar inducement likuiditeti',
       },
       {
         id: 'c3',
-        name: 'Target Sweep (TS) KRYER',
-        confirmed: true,
-        ruleDetail: 'TS pastroi inducementin deri në 1.29490 duke lënë bisht të gjatë',
+        name: 'Target Sweep (TS)',
+        confirmed: false,
+        ruleDetail: 'Presim sweep të IDM deri në 1.33890',
       },
       {
         id: 'c4',
         name: 'M1 MSS Reversal',
-        confirmed: true,
-        ruleDetail: 'Në M1 u shfaq menjëherë qiri marubozu shitës drejt bazës',
+        confirmed: false,
+        ruleDetail: 'Në M1 pritet qiri marubozu shitës',
       },
       {
         id: 'c5',
         name: 'Rregulli i Hekurt: SL 10 Pips',
         confirmed: true,
-        ruleDetail: 'SL fiks në 1.29520 (10 pips mbi hyrjen 1.29420)',
+        ruleDetail: 'SL fiks në 1.33920 (10 pips mbi hyrjen 1.33820)',
       },
       {
         id: 'c6',
         name: 'Pritja e Prekjes së Hyrjes Sniper',
         confirmed: false,
-        ruleDetail: 'Presim VETËM retestin e saktë në 1.29420 për hyrje me urdhër Sell Limit!',
+        ruleDetail: 'Presim retestin e saktë në 1.33820 për urdhër Sell Limit!',
       },
     ],
   },
@@ -685,54 +685,54 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'Engulfing Order Block + Equilibrium Sweep',
     patternType: 'ENGULFING_OB',
     timeframe: 'M15 POI > M1 Entry',
-    poiRange: '154.520 - 154.700',
-    idmLevel: 154.750,
-    expectedEntry: 154.600,
-    sl10Pips: 154.500, // 10 pips (0.100)
-    targetTp1: 154.900, // 1:3 R:R
-    targetTp2: 155.100, // 1:5 R:R
-    targetTp3: 155.400, // 1:8+ R:R
-    progressPercent: 95,
-    waitingOnlyForEntry: true,
-    currentStepDescription: 'Target Sweep (TS) KRYER në 154.530! Inducement u pastrua. E VETMJA GJË QË PRESIM: Çmimi të prekë pikën e hyrjes 154.600 për blerje!',
-    isReadyForEntry: true,
-    distancePips: 1.0,
+    poiRange: '157.200 - 157.350',
+    idmLevel: 157.450,
+    expectedEntry: 157.250,
+    sl10Pips: 157.150, // 10 pips (0.100)
+    targetTp1: 157.550, // 1:3 R:R
+    targetTp2: 157.750, // 1:5 R:R
+    targetTp3: 158.050, // 1:8+ R:R
+    progressPercent: 75,
+    waitingOnlyForEntry: false,
+    currentStepDescription: 'Engulfing Demand POI në 157.200 - 157.350. Çmimi po korrigjon drejt pikës së hyrjes 157.250 me SL fiks 10 pips.',
+    isReadyForEntry: false,
+    distancePips: 23.0,
     confirmations: [
       {
         id: 'c1',
         name: 'M15 Engulfing Demand POI',
         confirmed: true,
-        ruleDetail: 'Qiriu masiv institutional engulfing formoi zonën në 154.520 - 154.700',
+        ruleDetail: 'Qiriu institutional engulfing formoi zonën në 157.200 - 157.350',
       },
       {
         id: 'c2',
         name: 'Inducement (IDM) Trap',
         confirmed: true,
-        ruleDetail: 'IDM u krijua në 154.750 nga blerësit e paduruar',
+        ruleDetail: 'IDM u krijua në 157.450 nga blerësit e paduruar',
       },
       {
         id: 'c3',
-        name: 'Target Sweep (TS) KRYER',
-        confirmed: true,
-        ruleDetail: 'TS fshiu stopat deri në 154.530 duke lënë pinbar bullish me vëllim',
+        name: 'Target Sweep (TS)',
+        confirmed: false,
+        ruleDetail: 'Presim sweep në 157.220 duke lënë pinbar bullish me vëllim',
       },
       {
         id: 'c4',
         name: 'M1 MSS Reversal',
-        confirmed: true,
-        ruleDetail: 'M1 u kthye menjëherë në Higher High me absorbim institucional',
+        confirmed: false,
+        ruleDetail: 'M1 pritet të konfirmojë Higher High me absorbim institucional',
       },
       {
         id: 'c5',
         name: 'Rregulli i Hekurt: SL 10 Pips',
         confirmed: true,
-        ruleDetail: 'SL fiks në 154.500 (0.100 nga hyrja)',
+        ruleDetail: 'SL fiks në 157.150 (0.100 nga hyrja)',
       },
       {
         id: 'c6',
         name: 'Pritja e Prekjes së Hyrjes Sniper',
         confirmed: false,
-        ruleDetail: 'Presim VETËM prekjen e nivelit 154.600 për ekzekutim Buy!',
+        ruleDetail: 'Presim prekjen e nivelit 157.250 për ekzekutim Buy!',
       },
     ],
   },
@@ -744,18 +744,18 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
     patternName: 'RBS (Resistance Become Support) Retest',
     patternType: 'RBS',
     timeframe: 'M15 POI',
-    poiRange: '4372.00 - 4373.50',
-    idmLevel: 4375.20,
-    expectedEntry: 4373.00,
-    sl10Pips: 4372.00, // 10 pips
-    targetTp1: 4376.00, // 1:3 R:R
-    targetTp2: 4378.00, // 1:5 R:R
-    targetTp3: 4381.00, // 1:8+ R:R
-    progressPercent: 60,
+    poiRange: '4328.80 - 4330.20',
+    idmLevel: 4331.20,
+    expectedEntry: 4329.50,
+    sl10Pips: 4328.50, // 10 pips
+    targetTp1: 4332.50, // 1:3 R:R
+    targetTp2: 4334.50, // 1:5 R:R
+    targetTp3: 4337.50, // 1:8+ R:R
+    progressPercent: 70,
     waitingOnlyForEntry: false,
-    currentStepDescription: 'Inducement u krijua në 4375.20. Po presim rënien për TS (Target Sweep) të pastrojë IDM para futjes.',
+    currentStepDescription: 'M15 RBS Demand e lokalizuar në 4328.80 - 4330.20. Presim pastrimin e likuiditetit (TS) në 4329.50 para futjes në blerje me SL 10 pips!',
     isReadyForEntry: false,
-    distancePips: 8.5,
+    distancePips: 50.0,
     confirmations: [
       {
         id: 'c1',
@@ -767,7 +767,7 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
         id: 'c2',
         name: 'Inducement (IDM) në Krijim',
         confirmed: true,
-        ruleDetail: 'Inducement i identifikuar në 4375.20',
+        ruleDetail: 'Inducement i identifikuar në 4331.20',
       },
       {
         id: 'c3',
@@ -785,7 +785,7 @@ export const INITIAL_MSNR_RADAR_SETUPS: MSNRRadarSetup[] = [
         id: 'c5',
         name: 'Rregulli i Hekurt: SL 10 Pips',
         confirmed: true,
-        ruleDetail: 'Llogaritur në 4372.00',
+        ruleDetail: 'Llogaritur në 4328.50',
       },
       {
         id: 'c6',
