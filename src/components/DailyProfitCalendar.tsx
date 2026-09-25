@@ -26,6 +26,7 @@ import {
 import { ICTTrade } from '../types/trading';
 import { PositionSizingCalculatorCard } from './PositionSizingCalculatorCard';
 import { accountBalanceService } from '../services/accountBalanceService';
+import { getDynamicDays } from '../utils/dateUtils';
 
 export interface CalendarDayTrade {
   id: string;
@@ -444,8 +445,124 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
           sl: 4362.8,
           tp: 4347.8,
           resultPips: 65,
+          status: 'TP_HIT',
+          note: 'Ekzekutim i New York: Çmimi mori likuiditetin e lartë dhe arriti TP (+65 pips)!',
+        },
+      ],
+      // Sep 22 (Tue)
+      '2026-09-22': [
+        {
+          id: 'trade-sot-22-1',
+          time: '08:30 UTC',
+          type: 'BUY',
+          setupName: 'London Judas Swing në 1H Demand (4355.00)',
+          session: 'London',
+          entry: 4358.2,
+          sl: 4354.0,
+          tp: 4366.6,
+          resultPips: 84,
+          status: 'TP_HIT',
+          note: 'Sweep i pastër i Asian Lows dhe arritje e shpejtë në TP (+84 pips).',
+        },
+        {
+          id: 'trade-sot-22-2',
+          time: '14:15 UTC',
+          type: 'SELL',
+          setupName: 'NY Killzone OTE Retest SELL',
+          session: 'New York',
+          entry: 4372.4,
+          sl: 4377.0,
+          tp: 4363.2,
+          resultPips: 92,
+          status: 'TP_HIT',
+          note: 'Reagim nga niveli OTE 62% me rënie impulsive drejt TP (+92 pips).',
+        },
+      ],
+      // Sep 23 (Wed)
+      '2026-09-23': [
+        {
+          id: 'trade-sot-23-1',
+          time: '08:45 UTC',
+          type: 'SELL',
+          setupName: 'Turtle Soup Previous Day High (PDH) Sweep',
+          session: 'London',
+          entry: 4384.5,
+          sl: 4389.0,
+          tp: 4375.5,
+          resultPips: 90,
+          status: 'TP_HIT',
+          note: 'Out & In candle mbi PDH, MSS konfirmoi kthimin (+90 pips).',
+        },
+        {
+          id: 'trade-sot-23-2',
+          time: '15:00 UTC',
+          type: 'BUY',
+          setupName: 'New York M15 Breaker Block Mitigation',
+          session: 'New York',
+          entry: 4368.0,
+          sl: 4363.5,
+          tp: 4377.0,
+          resultPips: 90,
+          status: 'TP_HIT',
+          note: 'Test i Breaker Block me FVG bullish, target liquidity e sesionit (+90 pips).',
+        },
+      ],
+      // Sep 24 (Thu)
+      '2026-09-24': [
+        {
+          id: 'trade-sot-24-1',
+          time: '09:00 UTC',
+          type: 'BUY',
+          setupName: 'London Open PDL Sweep + W-Formation',
+          session: 'London',
+          entry: 4362.0,
+          sl: 4357.5,
+          tp: 4371.0,
+          resultPips: 90,
+          status: 'TP_HIT',
+          note: 'Formacion W perfekt pas manipulimit të hapjes së Londrës (+90 pips).',
+        },
+        {
+          id: 'trade-sot-24-2',
+          time: '14:20 UTC',
+          type: 'SELL',
+          setupName: 'Asian Range High Liquidity Purge SELL',
+          session: 'New York',
+          entry: 4379.8,
+          sl: 4384.5,
+          tp: 4370.4,
+          resultPips: 94,
+          status: 'TP_HIT',
+          note: 'Purge i Asian Highs dhe rënie e fuqishme në TP (+94 pips).',
+        },
+      ],
+      // Sep 25 (Fri - TODAY)
+      '2026-09-25': [
+        {
+          id: 'trade-sot-25-1',
+          time: '08:30 UTC',
+          type: 'BUY',
+          setupName: 'London Killzone Bullish FVG Retest pas MSS',
+          session: 'London',
+          entry: 4352.4,
+          sl: 4348.0,
+          tp: 4361.2,
+          resultPips: 88,
+          status: 'TP_HIT',
+          note: 'MSS e qartë me trup qiriri, hyrje në retest FVG dhe arritje në TP1 (+88 pips)!',
+        },
+        {
+          id: 'trade-sot-25-2',
+          time: '14:15 UTC',
+          type: 'SELL',
+          setupName: '4H Supply Zone & Buy-Side Sweep SELL',
+          session: 'New York',
+          entry: 4364.5,
+          sl: 4369.0,
+          tp: 4355.5,
+          resultPips: 60,
           status: 'ACTIVE',
-          note: 'Ekzekutim i sotëm live i New York: Çmimi mori likuiditetin e lartë dhe po lëviz drejt TP me +65 pips në fitim aktiv!',
+          note: 'Tregti aktive live e ditës së sotme në New York: Duke lëvizur drejt objektivit me +60 pips fitim!',
         },
       ],
     };
@@ -454,21 +571,21 @@ export const DailyProfitCalendar: React.FC<DailyProfitCalendarProps> = ({
   // Merge default historical trades with custom user-logged trades and active asset trades
   const allDaysTrades = useMemo(() => {
     const combined: Record<string, CalendarDayTrade[]> = { ...defaultHistoricalTrades };
-    const todayDateKey = (() => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    })();
+    const dynamicDays = getDynamicDays();
+    const todayDateKey = dynamicDays.today.isoDate;
+    const yesterdayDateKey = dynamicDays.yesterday.isoDate;
+    const dayBeforeDateKey = dynamicDays.dayBefore.isoDate;
 
     // If initialTrades for this asset is provided, map them
     if (initialTrades && initialTrades.length > 0) {
-      delete combined['2026-09-16'];
-      delete combined['2026-09-17'];
+      delete combined[dayBeforeDateKey];
+      delete combined[yesterdayDateKey];
       delete combined[todayDateKey];
 
       initialTrades.forEach((t) => {
         let dateKey = todayDateKey;
-        if (t.day === 'day_before') dateKey = '2026-09-16';
-        else if (t.day === 'yesterday') dateKey = '2026-09-17';
+        if (t.day === 'day_before') dateKey = dayBeforeDateKey;
+        else if (t.day === 'yesterday') dateKey = yesterdayDateKey;
         else if (t.day === 'today') dateKey = todayDateKey;
 
         if (!combined[dateKey]) combined[dateKey] = [];

@@ -61,12 +61,21 @@ export default function App() {
   }));
 
   // Independent per-asset trades datasets
-  const [tradesMap, setTradesMap] = useState<Record<AssetId, ICTTrade[]>>(() => ({
-    XAUUSD: [...ASSETS_REGISTRY.XAUUSD.trades],
-    EURUSD: [...ASSETS_REGISTRY.EURUSD.trades],
-    GBPUSD: [...ASSETS_REGISTRY.GBPUSD.trades],
-    USDJPY: [...ASSETS_REGISTRY.USDJPY.trades],
-  }));
+  const [tradesMap, setTradesMap] = useState<Record<AssetId, ICTTrade[]>>(() => {
+    let custom: Record<string, ICTTrade[]> = {};
+    try {
+      const s = localStorage.getItem('ict_custom_trades_v4');
+      if (s) custom = JSON.parse(s);
+    } catch {
+      // ignore
+    }
+    return {
+      XAUUSD: [...(custom.XAUUSD || []), ...ASSETS_REGISTRY.XAUUSD.trades],
+      EURUSD: [...(custom.EURUSD || []), ...ASSETS_REGISTRY.EURUSD.trades],
+      GBPUSD: [...(custom.GBPUSD || []), ...ASSETS_REGISTRY.GBPUSD.trades],
+      USDJPY: [...(custom.USDJPY || []), ...ASSETS_REGISTRY.USDJPY.trades],
+    };
+  });
 
   // Selected trade per asset
   const [selectedTradesMap, setSelectedTradesMap] = useState<Record<AssetId, ICTTrade | null>>(() => ({
@@ -126,6 +135,39 @@ export default function App() {
     };
     window.addEventListener('app_entry_notification', handleEntryNotif);
     return () => window.removeEventListener('app_entry_notification', handleEntryNotif);
+  }, []);
+
+  useEffect(() => {
+    const handleNewIctTrade = (e: any) => {
+      const { trade, assetId } = e.detail || {};
+      if (!trade || !assetId) return;
+      const validAsset = (assetId as AssetId) || 'XAUUSD';
+      setTradesMap((prev) => {
+        const currentList = prev[validAsset] || [];
+        if (currentList.some((t) => t.id === trade.id)) return prev;
+        const updated = [trade, ...currentList];
+        try {
+          const s = localStorage.getItem('ict_custom_trades_v4');
+          const custom = s ? JSON.parse(s) : {};
+          custom[validAsset] = [trade, ...(custom[validAsset] || [])];
+          localStorage.setItem('ict_custom_trades_v4', JSON.stringify(custom));
+        } catch {
+          // ignore
+        }
+        return {
+          ...prev,
+          [validAsset]: updated,
+        };
+      });
+
+      setSelectedTradesMap((prev) => ({
+        ...prev,
+        [validAsset]: trade,
+      }));
+    };
+
+    window.addEventListener('ict_new_trade_created', handleNewIctTrade);
+    return () => window.removeEventListener('ict_new_trade_created', handleNewIctTrade);
   }, []);
 
   // Active Asset's current data

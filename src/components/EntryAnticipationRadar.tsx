@@ -4,6 +4,14 @@ import { notificationService } from '../services/notificationService';
 import { soundService } from '../utils/audioAlert';
 import { marketPriceService } from '../services/marketPriceService';
 import {
+  ICTStrategyEngine,
+  getCleanICTAsset,
+  getICTPipMultiplier,
+  getICTDecimals,
+  getICTCurrencySymbol,
+} from '../services/ictStrategyEngine';
+import { getDynamicDays } from '../utils/dateUtils';
+import {
   Target,
   Clock,
   ArrowDownRight,
@@ -48,6 +56,34 @@ interface EntryAnticipationRadarProps {
   currencySymbol?: string;
 }
 
+function generateDefaultICTSetups(
+  livePrice: number,
+  assetSymbol: string,
+  _pipMultiplier?: number,
+  _decimals?: number,
+  _currencySymbol?: string
+): AnticipationSetup[] {
+  const clean = getCleanICTAsset(assetSymbol);
+  return [
+    ICTStrategyEngine.generateSetup(clean, livePrice, 0),
+    ICTStrategyEngine.generateSetup(clean, livePrice, 1),
+    ICTStrategyEngine.generateSetup(clean, livePrice, 2),
+    ICTStrategyEngine.generateSetup(clean, livePrice, 3),
+  ];
+}
+
+function areSetupsFresh(setups: AnticipationSetup[], price: number, mult: number): boolean {
+  if (!setups || setups.length === 0) return false;
+  // If all setups have Stop Loss breached or are > 80 pips away, they are stale
+  const validCount = setups.filter((s) => {
+    const isSell = s.type === 'SELL';
+    const slBreached = isSell ? price >= s.projectedSl : price <= s.projectedSl;
+    const distPips = Math.abs(price - s.projectedEntry) * mult;
+    return !slBreached && distPips <= 75;
+  }).length;
+  return validCount >= 2;
+}
+
 export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
   livePrice,
   onFocusLevel,
@@ -61,115 +97,69 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
   // Simulation & live movement state
   const [isSimulatingLive, setIsSimulatingLive] = useState<boolean>(false);
   const [simulationSpeed, setSimulationSpeed] = useState<'normal' | 'fast'>('normal');
+  const [ictGenCount, setIctGenCount] = useState<number>(0);
+  const [selectedGenAsset, setSelectedGenAsset] = useState<string>(() => assetSymbol);
 
-  // Pre-configured default ICT setups in anticipation
-  const defaultSetups: AnticipationSetup[] = useMemo(
-    () => [
-      {
-        id: 'setup-1-sell-4338',
-        name: 'M-Formation SELL në 4H Supply ($4338.50)',
-        type: 'SELL',
-        status: 'MSS_WAIT',
-        statusLabel: '75% - MSS Ndodhi me Trup (Presim Retest në FVG)',
-        htfPoiLevel: 4338.5,
-        htfPoiLabel: '4H Bearish Supply POI ($4338.50)',
-        expectedSweepLevel: 4340.2,
-        expectedMssLevel: 4335.5,
-        projectedEntry: 4337.2,
-        projectedSl: 4341.2,
-        projectedTp: 4329.2,
-        riskPips: 40,
-        targetPips: 80,
-        rrRatio: 2.0,
-        stepCurrent: 3,
-        stepDescription: 'MSS theu strukturën në 4335.50 me trup qiriri të fuqishëm. Po presim retest në Premium FVG 4337.20 për hyrje në shitje me SL të mbrojtur!',
-        triggerDistancePips: 27,
-        slPlacementGuide: 'Vendoset në $4341.20 (40 pips / +$4.00) — 1.00$ mbi fitilin më të lartë të Sweep ($4340.20) për mbrojtje absolute nga spread.',
-        tpPlacementGuide: 'Vendoset në $4329.20 (80 pips / -$8.00) — raport fiks 1:2 R:R drejt Sell-Side Liquidity.',
-      },
-      {
-        id: 'setup-2-buy-4328',
-        name: 'London Low Sweep W-Formation BUY ($4328.00)',
-        type: 'BUY',
-        status: 'MSS_WAIT',
-        statusLabel: '75% - MSS Ndodhi me Trup (PËRGATITU, presim Retest!)',
-        htfPoiLevel: 4328.0,
-        htfPoiLabel: 'London Session Low POI ($4328.00)',
-        expectedSweepLevel: 4326.4,
-        expectedMssLevel: 4331.2,
-        projectedEntry: 4329.5,
-        projectedSl: 4325.5,
-        projectedTp: 4337.5,
-        riskPips: 40,
-        targetPips: 80,
-        rrRatio: 2.0,
-        stepCurrent: 3,
-        stepDescription: 'MSS theu strukturën në 4331.20 me qiri të fuqishëm me trup. Presim kthimin e ngadaltë (Retest) në Discount FVG në 4329.50.',
-        triggerDistancePips: 48,
-        slPlacementGuide: 'Vendoset në $4325.50 (40 pips / -$4.00) — saktësisht 0.90$ nën pikën më të ulët të fitilit të Sweep ($4326.40).',
-        tpPlacementGuide: 'Vendoset në $4337.50 (80 pips / +$8.00) — raport fiks 1:2 R:R.',
-      },
-      {
-        id: 'setup-3-sell-4345',
-        name: 'Daily High Liquidity Sweep ($4345.00) Reversal SELL',
-        type: 'SELL',
-        status: 'SWEEP_WAIT',
-        statusLabel: '50% - U bë Sweep i Likuiditetit (MOS U FUT, presim MSS!)',
-        htfPoiLevel: 4345.0,
-        htfPoiLabel: 'Previous Day High ($4345.00)',
-        expectedSweepLevel: 4346.8,
-        expectedMssLevel: 4342.0,
-        projectedEntry: 4343.8,
-        projectedSl: 4347.8,
-        projectedTp: 4335.8,
-        riskPips: 40,
-        targetPips: 80,
-        rrRatio: 2.0,
-        stepCurrent: 2,
-        stepDescription: 'Çmimi bëri fitil mbi 4345.00 dhe u mbyll brenda. MOS U FUT akoma sepse mungon MSS me trup qiriri për të vërtetuar kthimin!',
-        triggerDistancePips: 95,
-        slPlacementGuide: 'Vendoset në $4347.80 (40 pips / +$4.00) — 1.00$ mbi majën e fitilit të Sweep ($4346.80). Vendoset vetëm pasi të ndodhë MSS!',
-        tpPlacementGuide: 'Vendoset në $4335.80 (80 pips / -$8.00) — raport fiks 1:2 R:R.',
-      },
-      {
-        id: 'setup-4-buy-4322',
-        name: 'W-Formation BUY në 1H Bullish Demand ($4322.00)',
-        type: 'BUY',
-        status: 'POI_WAIT',
-        statusLabel: '25% - Vetëm POI Prekje (MOS U FUT, mungon Sweep dhe MSS!)',
-        htfPoiLevel: 4322.0,
-        htfPoiLabel: '1H Bullish Demand POI ($4322.00)',
-        expectedSweepLevel: 4320.2,
-        expectedMssLevel: 4325.5,
-        projectedEntry: 4323.5,
-        projectedSl: 4319.5,
-        projectedTp: 4331.5,
-        riskPips: 40,
-        targetPips: 80,
-        rrRatio: 2.0,
-        stepCurrent: 1,
-        stepDescription: 'Çmimi vetëm sa po prek zonën Demand (4322.00). RREZIK I LARTË po u fute këtu sepse nuk e dimë a do kthehet apo do vazhdojë rënien!',
-        triggerDistancePips: 110,
-        slPlacementGuide: 'Do të vendoset në $4319.50 (40 pips / -$4.00) — 0.70$ poshtë fitilit më të ulët të Sweep në W ($4320.20) sapo të kryhet sweep-i.',
-        tpPlacementGuide: 'Vendoset në $4331.50 (80 pips / +$8.00) — raport fiks 1:2 R:R.',
-      },
-    ],
-    []
-  );
-
-  const initialSetups = propSetups && propSetups.length > 0 ? propSetups : defaultSetups;
-  const [setupsList, setSetupsList] = useState<AnticipationSetup[]>(initialSetups);
-  const [activeSetupId, setActiveSetupId] = useState<string>(initialSetups[0]?.id || 'setup-1-sell-4338');
-
-  // Sync setupsList when propSetups or active asset changes
   useEffect(() => {
-    if (propSetups && propSetups.length > 0) {
-      setSetupsList(propSetups);
-      if (!propSetups.some((s) => s.id === activeSetupId)) {
-        setActiveSetupId(propSetups[0].id);
+    setSelectedGenAsset(assetSymbol);
+  }, [assetSymbol]);
+
+  const storageKey = `ict_radar_setups_v4_${assetSymbol.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+  const [setupsList, setSetupsList] = useState<AnticipationSetup[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed: AnticipationSetup[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && areSetupsFresh(parsed, livePrice, pipMultiplier)) {
+          return parsed;
+        }
       }
+    } catch {
+      // ignore
     }
-  }, [propSetups]);
+    if (propSetups && propSetups.length > 0 && areSetupsFresh(propSetups, livePrice, pipMultiplier)) {
+      return propSetups;
+    }
+    return generateDefaultICTSetups(livePrice, assetSymbol, pipMultiplier, decimals, currencySymbol);
+  });
+  const [activeSetupId, setActiveSetupId] = useState<string>(setupsList[0]?.id || 'setup-1');
+
+  // Save to localStorage whenever setupsList changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(setupsList));
+    } catch {
+      // ignore
+    }
+  }, [setupsList, storageKey]);
+
+  // When assetSymbol or propSetups changes, reload setups
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && areSetupsFresh(parsed, livePrice, pipMultiplier)) {
+          setSetupsList(parsed);
+          setActiveSetupId(parsed[0].id);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    if (propSetups && propSetups.length > 0 && areSetupsFresh(propSetups, livePrice, pipMultiplier)) {
+      setSetupsList(propSetups);
+      setActiveSetupId(propSetups[0].id);
+      return;
+    }
+
+    const fresh = generateDefaultICTSetups(livePrice, assetSymbol, pipMultiplier, decimals, currencySymbol);
+    setSetupsList(fresh);
+    setActiveSetupId(fresh[0].id);
+  }, [assetSymbol]);
 
   // Real-time Scanning & 1-Minute Auto-Check State
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -183,7 +173,7 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
   const [accountBalance, setAccountBalance] = useState<number>(10000);
   const [riskPercent, setRiskPercent] = useState<number>(1);
-  const [alertArmedId, setAlertArmedId] = useState<string | null>(initialSetups[0]?.id || null);
+  const [alertArmedId, setAlertArmedId] = useState<string | null>(setupsList[0]?.id || null);
   const [copiedOrder, setCopiedOrder] = useState<boolean>(false);
 
   // Helper function: accurately evaluate each setup against livePrice
@@ -208,8 +198,8 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
   // Selected setup
   const currentSetup = useMemo(
-    () => setupsList.find((s) => s.id === activeSetupId) || setupsList[0] || defaultSetups[0],
-    [setupsList, activeSetupId, defaultSetups]
+    () => setupsList.find((s) => s.id === activeSetupId) || setupsList[0] || null,
+    [setupsList, activeSetupId]
   );
 
   // Count invalidated setups
@@ -224,12 +214,12 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
         const { slBreached, tpHit } = checkSetupStatus(s);
         return !slBreached && !tpHit;
       });
-      if (active.length === 0) {
-        return defaultSetups;
+      if (active.length < 2) {
+        return generateDefaultICTSetups(livePrice, assetSymbol, pipMultiplier, decimals, currencySymbol);
       }
       return active;
     });
-    setScanMessage('🧹 Skenarët e tejkaluar (SL i thyer ose TP e arritur) u pastruan nga lista!');
+    setScanMessage('🧹 Skenarët e tejkaluar (SL i thyer ose TP e arritur) u pastruan nga lista dhe u rifreskuan me çmimet e sotme!');
     setTimeout(() => setScanMessage(null), 4000);
   };
 
@@ -253,7 +243,7 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
 
     setTimeout(() => {
       setSetupsList((prevSetups) => {
-        return prevSetups.map((setup) => {
+        const updated = prevSetups.map((setup) => {
           const { isSell, distPips, slBreached, slDiff, tpHit, isAtEntry } = checkSetupStatus(setup);
 
           if (slBreached) {
@@ -281,6 +271,78 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
           if (isAtEntry) {
             if (soundEnabled) soundService.playEntryAlert();
             setExecutedSetupId(setup.id);
+
+            // Send notification for ICT entry
+            notificationService.sendNotification({
+              title: `⚡ HYRJE ICT SNIPER: ${assetSymbol} (${setup.type})!`,
+              body: `Çmimi preku pikën e hyrjes (${currencySymbol}${setup.projectedEntry.toFixed(decimals)})! SL: ${currencySymbol}${setup.projectedSl.toFixed(decimals)} (-${setup.riskPips}p) | TP: ${currencySymbol}${setup.projectedTp.toFixed(decimals)} (+${setup.targetPips}p). U ruajt në Kalendar.`,
+              type: 'ENTRY',
+              price: setup.projectedEntry,
+            });
+
+            // Auto-save to ICT calendar and dispatch new trade event
+            try {
+              const d = new Date();
+              const dynamicDays = getDynamicDays();
+              const dateKey = dynamicDays.today.isoDate;
+              const cleanAsset = getCleanICTAsset(assetSymbol);
+              const symbolFormatted = cleanAsset === 'XAUUSD' ? 'XAU/USD' : `${cleanAsset.slice(0, 3)}/${cleanAsset.slice(3)}`;
+
+              const newTrade = {
+                id: `ict-radar-${Date.now()}`,
+                symbol: symbolFormatted,
+                day: 'today' as const,
+                dayLabel: dynamicDays.today.dayLabel,
+                dateFormatted: dynamicDays.today.dateFormatted,
+                timeFormatted: `${d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' })} UTC`,
+                session: (d.getUTCHours() < 12 ? 'London Session' : 'New York Session') as 'London Session' | 'New York Session',
+                type: setup.type,
+                entryPrice: setup.projectedEntry,
+                stopLoss: setup.projectedSl,
+                takeProfit: setup.projectedTp,
+                exitPrice: setup.projectedTp,
+                exitTime: `${d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' })} UTC`,
+                riskReward: setup.rrRatio || 2.0,
+                riskPips: setup.riskPips,
+                targetPips: setup.targetPips,
+                resultPips: setup.targetPips,
+                status: 'ACTIVE' as const,
+                allConditionsMet: true,
+                timeframe: 'M5',
+                reasoning: `${setup.name}. Retest në FVG pas MSS. U ekzekutua automatikisht në kohë reale nga Radari ICT.`,
+                entryTime: Math.floor(Date.now() / 1000),
+              };
+
+              // Dispatch event for App.tsx
+              window.dispatchEvent(
+                new CustomEvent('ict_new_trade_created', {
+                  detail: { trade: newTrade, assetId: cleanAsset },
+                })
+              );
+
+              // Auto-save to ICT calendar for today
+              const savedCal = localStorage.getItem('ict_custom_calendar_trades');
+              const calMap = savedCal ? JSON.parse(savedCal) : {};
+              const calTrade = {
+                id: newTrade.id,
+                time: newTrade.timeFormatted,
+                type: setup.type,
+                setupName: `${setup.name} (Radari ICT)`,
+                session: d.getUTCHours() < 12 ? 'London' : 'New York',
+                resultPips: setup.targetPips || 80,
+                status: 'ACTIVE',
+                entryPrice: setup.projectedEntry,
+                exitPrice: setup.projectedTp,
+              };
+              if (!calMap[dateKey]) calMap[dateKey] = [];
+              if (!calMap[dateKey].some((t: any) => t.setupName === calTrade.setupName)) {
+                calMap[dateKey] = [calTrade, ...calMap[dateKey]];
+                localStorage.setItem('ict_custom_calendar_trades', JSON.stringify(calMap));
+              }
+            } catch (err) {
+              console.error('Failed to auto-save ICT calendar trade:', err);
+            }
+
             return {
               ...setup,
               stepCurrent: 4,
@@ -296,6 +358,21 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
             triggerDistancePips: distPips,
           };
         });
+
+        const validCount = updated.filter((s) => {
+          const { slBreached, tpHit } = checkSetupStatus(s);
+          return !slBreached && !tpHit;
+        }).length;
+
+        if (validCount < 2) {
+          const fresh = generateDefaultICTSetups(livePrice, assetSymbol, pipMultiplier, decimals, currencySymbol);
+          return [...fresh, ...updated.filter((s) => {
+            const { slBreached, tpHit } = checkSetupStatus(s);
+            return !slBreached && !tpHit;
+          })];
+        }
+
+        return updated;
       });
 
       const now = new Date().toLocaleTimeString('sq-AL');
@@ -330,108 +407,21 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
   }, [autoScanEnabled, livePrice, soundEnabled, pipMultiplier, assetSymbol]);
 
   // Generate new candidate setup based on current ICT market state
-  const handleGenerateNewICTSetup = () => {
+  const handleGenerateNewICTSetup = (assetOverride?: string) => {
     setIsScanning(true);
-    setScanMessage(`Duke analizuar tregun dhe duke gjeneruar skenar të ri ICT (${assetSymbol})...`);
+    const targetAssetRaw = assetOverride || selectedGenAsset || assetSymbol;
+    const cleanAsset = getCleanICTAsset(targetAssetRaw);
+    setScanMessage(`Duke analizuar tregun dhe duke gjeneruar skenar të ri live ICT (${cleanAsset})...`);
 
     setTimeout(() => {
-      const timestampId = `ict-gen-${Date.now()}`;
-      const isSell = Math.random() > 0.5;
+      const nextVariant = ictGenCount + 1;
+      setIctGenCount(nextVariant);
 
-      // Calculate realistic delta based on asset and decimals
-      let deltaPoi: number;
-      let deltaSweep: number;
-      let deltaMss: number;
-      let deltaEntry: number;
-      let riskPips: number;
+      const targetPrice = cleanAsset === getCleanICTAsset(assetSymbol)
+        ? livePrice
+        : marketPriceService.getCalibratedPrice(cleanAsset);
 
-      if (pipMultiplier >= 1000) {
-        // EUR/USD, GBP/USD (decimals = 4/5)
-        riskPips = 30;
-        deltaPoi = 0.0035;
-        deltaSweep = 0.0012;
-        deltaMss = 0.0010;
-        deltaEntry = 0.0020;
-      } else if (pipMultiplier >= 100) {
-        // USD/JPY (decimals = 2/3)
-        riskPips = 30;
-        deltaPoi = 0.35;
-        deltaSweep = 0.12;
-        deltaMss = 0.10;
-        deltaEntry = 0.20;
-      } else {
-        // Gold XAU/USD (pipMultiplier = 10, 1 pip = $0.10)
-        riskPips = 38;
-        deltaPoi = 3.80;
-        deltaSweep = 1.30;
-        deltaMss = 1.10;
-        deltaEntry = 2.20;
-      }
-
-      const riskValue = riskPips / pipMultiplier;
-      const targetValue = (riskPips * 2) / pipMultiplier; // 1:2 R:R
-
-      let poi: number;
-      let sweep: number;
-      let mss: number;
-      let entry: number;
-      let sl: number;
-      let tp: number;
-      let name: string;
-      let poiLabel: string;
-      let slGuide: string;
-      let tpGuide: string;
-
-      if (isSell) {
-        poi = Number((livePrice + deltaPoi).toFixed(decimals));
-        sweep = Number((poi + deltaSweep).toFixed(decimals));
-        mss = Number((livePrice + deltaMss).toFixed(decimals));
-        entry = Number((livePrice + deltaEntry).toFixed(decimals));
-        sl = Number((sweep + (pipMultiplier >= 1000 ? 0.0008 : pipMultiplier >= 100 ? 0.08 : 0.80)).toFixed(decimals));
-        tp = Number((entry - targetValue).toFixed(decimals));
-
-        name = `London Killzone FVG Retest SELL pas MSS me Displacement`;
-        poiLabel = `4H Supply Zone & Buy-Side Liquidity (${currencySymbol}${poi.toFixed(decimals)})`;
-        slGuide = `Vendoset në ${currencySymbol}${sl.toFixed(decimals)} (-${riskPips} pips) — saktësisht mbi fitilin më të lartë të Sweep (${currencySymbol}${sweep.toFixed(decimals)}) për mbrojtje nga spread.`;
-        tpGuide = `Vendoset në ${currencySymbol}${tp.toFixed(decimals)} (+${riskPips * 2} pips) — raport fiks 1:2 R:R drejt Sell-Side Liquidity.`;
-      } else {
-        poi = Number((livePrice - deltaPoi).toFixed(decimals));
-        sweep = Number((poi - deltaSweep).toFixed(decimals));
-        mss = Number((livePrice - deltaMss).toFixed(decimals));
-        entry = Number((livePrice - deltaEntry).toFixed(decimals));
-        sl = Number((sweep - (pipMultiplier >= 1000 ? 0.0008 : pipMultiplier >= 100 ? 0.08 : 0.80)).toFixed(decimals));
-        tp = Number((entry + targetValue).toFixed(decimals));
-
-        name = `New York Session Low Sweep + Bullish FVG Retest BUY`;
-        poiLabel = `1H Bullish Demand & Sell-Side Liquidity (${currencySymbol}${poi.toFixed(decimals)})`;
-        slGuide = `Vendoset në ${currencySymbol}${sl.toFixed(decimals)} (-${riskPips} pips) — saktësisht nën fitilin më të ulët të Sweep (${currencySymbol}${sweep.toFixed(decimals)}).`;
-        tpGuide = `Vendoset në ${currencySymbol}${tp.toFixed(decimals)} (+${riskPips * 2} pips) — raport fiks 1:2 R:R drejt Buy-Side Liquidity.`;
-      }
-
-      const newSetup: AnticipationSetup = {
-        id: timestampId,
-        name,
-        type: isSell ? 'SELL' : 'BUY',
-        status: 'MSS_WAIT',
-        statusLabel: '75% - MSS Ndodhi me Trup (Presim Retest në FVG)',
-        htfPoiLevel: poi,
-        htfPoiLabel: poiLabel,
-        expectedSweepLevel: sweep,
-        expectedMssLevel: mss,
-        projectedEntry: entry,
-        projectedSl: sl,
-        projectedTp: tp,
-        projectedTp2: Number((entry + (isSell ? -targetValue * 1.5 : targetValue * 1.5)).toFixed(decimals)),
-        projectedTp3: Number((entry + (isSell ? -targetValue * 2.5 : targetValue * 2.5)).toFixed(decimals)),
-        riskPips,
-        targetPips: riskPips * 2,
-        rrRatio: 2.0,
-        stepCurrent: 3,
-        stepDescription: `MSS theu strukturën në ${currencySymbol}${mss.toFixed(decimals)} me displacement të qartë me trup qiriri. Presim kthimin e ngadaltë (Retest) në FVG në ${currencySymbol}${entry.toFixed(decimals)}!`,
-        triggerDistancePips: Math.round(Math.abs(livePrice - entry) * pipMultiplier),
-        slPlacementGuide: slGuide,
-        tpPlacementGuide: tpGuide,
-      };
+      const newSetup = ICTStrategyEngine.generateSetup(cleanAsset, targetPrice, nextVariant);
 
       setSetupsList((prev) => [newSetup, ...prev]);
       setActiveSetupId(newSetup.id);
@@ -442,7 +432,46 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
         soundService.playEntryAlert();
       }
 
-      setScanMessage(`🎯 Skenar i ri ICT u gjenerua për ${assetSymbol}! Hapi 3/4 (MSS) u konfirmua, po presim retest në FVG: ${currencySymbol}${entry.toFixed(decimals)}.`);
+      notificationService.sendNotification({
+        title: `⚡ Skenar i Ri ICT (${cleanAsset}): ${newSetup.type}!`,
+        body: `${newSetup.name}. Hyrja: ${newSetup.projectedEntry} | SL: ${newSetup.projectedSl} | TP: ${newSetup.projectedTp}.`,
+        type: 'ENTRY',
+        price: newSetup.projectedEntry,
+      });
+
+      setScanMessage(`✅ Skenari i ri live ICT për ${cleanAsset} u gjenerua me sukses! Model: ${newSetup.name}.`);
+      setTimeout(() => setScanMessage(null), 5000);
+    }, 450);
+  };
+
+  // Generate live setups for all 4 pairs simultaneously
+  const handleGenerateAllPairs = () => {
+    setIsScanning(true);
+    setScanMessage('Duke skanuar dhe gjeneruar skenarë live ICT për të 4 çiftet kryesore (XAU/USD, EUR/USD, GBP/USD, USD/JPY)...');
+
+    setTimeout(() => {
+      const livePricesMap: Record<string, number> = {
+        XAUUSD: marketPriceService.getCalibratedPrice('XAUUSD'),
+        EURUSD: marketPriceService.getCalibratedPrice('EURUSD'),
+        GBPUSD: marketPriceService.getCalibratedPrice('GBPUSD'),
+        USDJPY: marketPriceService.getCalibratedPrice('USDJPY'),
+      };
+      const activeClean = getCleanICTAsset(assetSymbol);
+      livePricesMap[activeClean] = livePrice;
+
+      const allSetups = ICTStrategyEngine.generateAllPairsLiveSetups(livePricesMap);
+      setSetupsList(allSetups);
+      if (allSetups.length > 0) {
+        setActiveSetupId(allSetups[0].id);
+      }
+      setIsScanning(false);
+      setCountdown(60);
+
+      if (soundEnabled) {
+        soundService.playEntryAlert();
+      }
+
+      setScanMessage('✅ Të 4 çiftet valutore u skanuan me sukses! U krijuan skenarë të freskët live me çmimet e sotme.');
       setTimeout(() => setScanMessage(null), 5000);
     }, 600);
   };
@@ -629,8 +658,38 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
           </div>
         </div>
 
+        {/* ASSET SELECTOR ROW FOR ICT GENERATION */}
+        <div className="pt-2.5 pb-1 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold">
+            <span className="text-amber-400 font-bold">🎯 Zgjidh Valutën për Skenar:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { id: 'XAUUSD', label: '🥇 XAU/USD (Gold)' },
+              { id: 'EURUSD', label: '💶 EUR/USD' },
+              { id: 'GBPUSD', label: '💷 GBP/USD' },
+              { id: 'USDJPY', label: '💴 USD/JPY' },
+            ].map((asset) => {
+              const isSelected = getCleanICTAsset(selectedGenAsset) === asset.id;
+              return (
+                <button
+                  key={asset.id}
+                  onClick={() => setSelectedGenAsset(asset.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm shadow-amber-500/30 scale-[1.02]'
+                      : 'bg-slate-850 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-750'
+                  }`}
+                >
+                  {asset.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* INTERACTIVE CONTROLS BAR (SCAN, GENERATE, AUTO-CHECK, SOUND) */}
-        <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {/* Skano & Kontrollo Tregun Tani Button */}
             <button
@@ -650,12 +709,36 @@ export const EntryAnticipationRadar: React.FC<EntryAnticipationRadarProps> = ({
             {/* Gjenero Skenar të Ri ICT Button */}
             <button
               id="radar-generate-new-setup-btn"
-              onClick={handleGenerateNewICTSetup}
+              onClick={() => handleGenerateNewICTSetup()}
               disabled={isScanning}
               className="px-4 py-2 rounded-xl text-xs font-black bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 hover:border-amber-400 transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02]"
             >
               <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
-              <span>+ Gjenero Skenar të Ri ICT (FVG • MSS)</span>
+              <span>+ Gjenero Skenar të Ri ICT ({selectedGenAsset === 'XAUUSD' ? 'XAU/USD' : selectedGenAsset})</span>
+            </button>
+
+            {/* Gjenero të 4 Valutat Live Button */}
+            <button
+              id="radar-generate-all-pairs-btn"
+              onClick={handleGenerateAllPairs}
+              disabled={isScanning}
+              title="Gjeneron menjëherë skenarë live për Gold, EUR/USD, GBP/USD dhe USD/JPY"
+              className="px-3.5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+              <span>⚡ Gjenero të 4 Valutat Live (Sot)</span>
+            </button>
+
+            {/* Pastro të Skaduarit & Rifresko Button */}
+            <button
+              id="radar-clear-invalid-btn"
+              onClick={handleClearInvalidated}
+              disabled={isScanning}
+              title="Fshin skenarët ku Stop Loss është thyer dhe i zëvendëson me skenarë aktivë live"
+              className="px-3 py-2 rounded-xl text-xs font-black bg-slate-850 hover:bg-slate-800 text-rose-300 border border-rose-500/30 hover:border-rose-400 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>🧹 Pastro të Vjetrit & Rifresko me Çmimet e Sotme</span>
             </button>
 
             {/* Auto-Kontroll 1m Toggle */}

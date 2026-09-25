@@ -1,4 +1,5 @@
 import { Candle, ICTTrade, BacktestStats } from '../types/trading';
+import { syncTradeDynamicDates } from '../utils/dateUtils';
 
 // Base timestamps for the 3 days (Pardje: Sep 16, Dje: Sep 17, Sot: Sep 18, 2026)
 // Using 5-minute intervals (300 seconds)
@@ -495,7 +496,7 @@ export function generateCandles(): { candles: Candle[]; trades: ICTTrade[] } {
     },
   ];
 
-  return { candles, trades };
+  return { candles, trades: syncTradeDynamicDates(trades) };
 }
 
 export function computeStats(trades: ICTTrade[]): BacktestStats {

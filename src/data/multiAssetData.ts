@@ -1,5 +1,8 @@
 import { Candle, ICTTrade, BacktestStats, AnticipationSetup } from '../types/trading';
 import { generateCandles as generateGoldCandles, computeStats } from './xauusdData';
+import { getDynamicDays, syncTradeDynamicDates } from '../utils/dateUtils';
+
+const dynamicDays = getDynamicDays();
 
 export type AssetId = 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
 
@@ -1146,7 +1149,7 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     iconText: '🥇',
     formatPrice: (p: number) => `$${p.toFixed(2)}`,
     candles: goldInitial.candles,
-    trades: goldInitial.trades,
+    trades: syncTradeDynamicDates(goldInitial.trades),
     stats: goldStats,
     setups: goldSetups,
   },
@@ -1165,8 +1168,8 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     iconText: '💶',
     formatPrice: (p: number) => `$${p.toFixed(4)}`,
     candles: eurCandles,
-    trades: eurTrades,
-    stats: computeStats(eurTrades),
+    trades: syncTradeDynamicDates(eurTrades),
+    stats: computeStats(syncTradeDynamicDates(eurTrades)),
     setups: eurSetups,
   },
   GBPUSD: {
@@ -1184,8 +1187,8 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     iconText: '💷',
     formatPrice: (p: number) => `$${p.toFixed(4)}`,
     candles: gbpCandles,
-    trades: gbpTrades,
-    stats: computeStats(gbpTrades),
+    trades: syncTradeDynamicDates(gbpTrades),
+    stats: computeStats(syncTradeDynamicDates(gbpTrades)),
     setups: gbpSetups,
   },
   USDJPY: {
@@ -1203,8 +1206,8 @@ export const ASSETS_REGISTRY: Record<AssetId, AssetConfig> = {
     iconText: '💴',
     formatPrice: (p: number) => `¥${p.toFixed(2)}`,
     candles: jpyCandles,
-    trades: jpyTrades,
-    stats: computeStats(jpyTrades),
+    trades: syncTradeDynamicDates(jpyTrades),
+    stats: computeStats(syncTradeDynamicDates(jpyTrades)),
     setups: jpySetups,
   },
 };

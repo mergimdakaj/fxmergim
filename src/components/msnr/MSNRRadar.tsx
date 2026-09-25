@@ -4,7 +4,7 @@ import { soundService } from '../../utils/audioAlert';
 import { marketPriceService } from '../../services/marketPriceService';
 import { MSNRCalendarService } from '../../services/msnrCalendarService';
 import { notificationService } from '../../services/notificationService';
-import { MSNRStrategyEngine, MarketStructureAudit, getPipSize } from '../../services/msnrStrategyEngine';
+import { MSNRStrategyEngine, MarketStructureAudit, getPipSize, getCleanAsset } from '../../services/msnrStrategyEngine';
 import { MSNRStructureAuditModal } from './MSNRStructureAuditModal';
 import { CustomPriceTriggerModal } from '../CustomPriceTriggerModal';
 import confetti from 'canvas-confetti';
@@ -130,9 +130,35 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   onTriggerSimulatedEntry,
   onNavigateToCalendar,
 }) => {
-  const [setupsList, setSetupsList] = useState<MSNRRadarSetup[]>(setups && setups.length > 0 ? setups : INITIAL_MSNR_RADAR_SETUPS);
+  const [setupsList, setSetupsList] = useState<MSNRRadarSetup[]>(() => {
+    try {
+      const saved = localStorage.getItem('msnr_radar_setups_v4');
+      if (saved) {
+        const parsed: MSNRRadarSetup[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return setups && setups.length > 0
+      ? setups
+      : MSNRStrategyEngine.generateAllPairsLiveSetups(livePrices);
+  });
   const [selectedFilter, setSelectedFilter] = useState<MSNRFilterType>('ACTIVE');
+  const [selectedGenAsset, setSelectedGenAsset] = useState<'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY'>('XAUUSD');
+  const [genCounter, setGenCounter] = useState<number>(0);
   const [copiedSetupId, setCopiedSetupId] = useState<string | null>(null);
+  
+  // Persist setupsList to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('msnr_radar_setups_v4', JSON.stringify(setupsList));
+    } catch {
+      // ignore
+    }
+  }, [setupsList]);
   
   // Scanning & 1-Minute Auto-Check State
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -216,7 +242,7 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
 
     setTimeout(() => {
       setSetupsList((prevSetups) => {
-        return prevSetups.map((setup) => {
+        const updated = prevSetups.map((setup) => {
           const currentPrice = livePrices[setup.assetId] ?? marketPriceService.getCalibratedPrice(setup.assetId);
           const evaluation = evaluateMsnrSetup(setup, currentPrice);
 
@@ -329,6 +355,20 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
             }),
           };
         });
+
+        // Automatically replenish if active valid setups are less than 2
+        const validSetups = updated.filter((s) => {
+          const cur = livePrices[s.assetId] ?? marketPriceService.getCalibratedPrice(s.assetId);
+          const ev = evaluateMsnrSetup(s, cur);
+          return !ev.slBreached && !ev.tpHit;
+        });
+
+        if (validSetups.length < 2) {
+          const fresh = MSNRStrategyEngine.generateAllPairsLiveSetups(livePrices);
+          return [...fresh, ...validSetups];
+        }
+
+        return updated;
       });
 
       const now = new Date().toLocaleTimeString('sq-AL');
@@ -446,13 +486,9 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
         return !evalResult.slBreached && !evalResult.tpHit;
       });
 
-      // If all setups were invalid, auto-generate clean setups based on real live price
+      // If all setups were invalid, auto-generate fresh clean setups based on real live prices
       if (validOnly.length === 0) {
-        const assets: ('XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY')[] = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY'];
-        return assets.map((a) => {
-          const live = livePrices[a] ?? marketPriceService.getCalibratedPrice(a);
-          return MSNRStrategyEngine.analyzeMarket(a, live).selectedSetup;
-        });
+        return MSNRStrategyEngine.generateAllPairsLiveSetups(livePrices);
       }
       return validOnly;
     });
@@ -531,25 +567,41 @@ export const MSNRRadar: React.FC<MSNRRadarProps> = ({
   });
 
   // Generate new candidate setup based on true MSNR LIT market structure (No arbitrary 8-10 pips!)
-  const handleGenerateNewSetup = () => {
+  const handleGenerateNewSetup = (overrideAsset?: 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY') => {
     setIsScanning(true);
     setTimeout(() => {
-      const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
+      const validAssets: ('XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY')[] = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY'];
+      const targetAsset = overrideAsset || (validAssets.includes(selectedFilter as any) ? (selectedFilter as any) : selectedGenAsset);
       const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
 
       // Perform genuine MSNR LIT analysis: M15 POI + Inducement + 10 Pips Strict SL
-      const audit = MSNRStrategyEngine.analyzeMarket(targetAsset, livePrice);
+      const audit = MSNRStrategyEngine.analyzeMarket(targetAsset, livePrice, [], genCounter);
+      setGenCounter((prev) => prev + 1);
       const newSetup = audit.selectedSetup;
       setCurrentAudit(audit);
 
-      setSetupsList((prev) => [newSetup, ...prev]);
+      setSetupsList((prev) => [newSetup, ...prev.filter((s) => s.id !== newSetup.id)]);
       setIsScanning(false);
       if (soundEnabled) soundService.playEntryAlert();
       setScanMessage(
-        `🎯 Skenar i ri MSNR LIT u gjenerua për ${newSetup.symbol} në bazë të strukturës institucionale M15 POI (${newSetup.poiRange}), kurthit IDM (${newSetup.idmLevel}), dhe SL fiks 10 pips (${newSetup.sl10Pips})!`
+        `🎯 Skenar i ri MSNR LIT u gjenerua për ${newSetup.symbol} (${newSetup.type})! Modeli: ${newSetup.patternName} | Hyrja: ${newSetup.expectedEntry} | SL fiks 10 pips: ${newSetup.sl10Pips}!`
       );
       setTimeout(() => setScanMessage(null), 6000);
-    }, 600);
+    }, 350);
+  };
+
+  // Generate fresh setups across all 4 major currency pairs
+  const handleGenerateAllPairs = () => {
+    setIsScanning(true);
+    setScanMessage('Duke skanuar strukturën e tregut dhe duke gjeneruar skenarë live për XAU/USD, EUR/USD, GBP/USD dhe USD/JPY...');
+    setTimeout(() => {
+      const fresh = MSNRStrategyEngine.generateAllPairsLiveSetups(livePrices);
+      setSetupsList(fresh);
+      setIsScanning(false);
+      if (soundEnabled) soundService.playRadarPing();
+      setScanMessage('⚡ U gjeneruan me sukses skenarë të rinj për të 4 valutat sipas çmimeve live të sotme!');
+      setTimeout(() => setScanMessage(null), 6000);
+    }, 500);
   };
 
   // Test / Simulate Price Touching Entry Point
@@ -659,55 +711,98 @@ Strategjia: Trade with Abjeed (MSNR Alchemist & LIT)`;
 
         {/* Action Controls: Gjenero / Skano Tani + Auto-Skanim çdo 1 minutë */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Target Asset Selector for Generation */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <span className="text-[10px] uppercase font-bold text-slate-400 px-1.5">Valuta:</span>
+            {(['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY'] as const).map((ast) => (
+              <button
+                key={ast}
+                type="button"
+                onClick={() => setSelectedGenAsset(ast)}
+                className={`px-2 py-1 rounded-lg text-xs font-black transition-all ${
+                  selectedGenAsset === ast
+                    ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {ast === 'XAUUSD' ? 'Gold (XAU)' : ast.slice(0, 3) + '/' + ast.slice(3)}
+              </button>
+            ))}
+          </div>
+
           {/* Button 1: GJENERO & SKANO TANI */}
           <button
             id="msnr-scan-now-btn"
             onClick={handleRescan}
             disabled={isScanning}
-            className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all shadow-lg ${
+            className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all shadow-lg ${
               isScanning
                 ? 'bg-emerald-600 text-white cursor-wait'
                 : 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 hover:scale-[1.02]'
             }`}
           >
-            <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>{isScanning ? 'Duke Skanuar Tregun...' : '⚡ Skano & Kontrollo Tregun Tani'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
+            <span>{isScanning ? 'Duke Skanuar...' : '⚡ Skano & Kontrollo Tregun'}</span>
           </button>
 
           {/* Button 2: GJENERO SKENAR TË RI */}
           <button
             id="msnr-generate-new-setup-btn"
-            onClick={handleGenerateNewSetup}
+            onClick={() => handleGenerateNewSetup(selectedGenAsset)}
             disabled={isScanning}
-            title="Gjenero një skenar të ri të konfirmuar me SL 10p nga struktura M15 POI dhe kurthi IDM"
-            className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            title={`Gjenero një skenar të ri të konfirmuar me SL 10p për ${selectedGenAsset}`}
+            className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm hover:scale-[1.02]"
           >
             <PlusCircle className="w-3.5 h-3.5 text-sky-400" />
-            <span>+ Gjenero Skenar të Ri M15/M1</span>
+            <span>+ Gjenero Skenar ({selectedGenAsset === 'XAUUSD' ? 'Gold' : selectedGenAsset})</span>
           </button>
 
-          {/* Button 3: VERIFIKO STRUKTURËN MSNR LIT (Trade with Abjeed) */}
+          {/* Button 3: GJENERO TË 4 VALUTAT LIVE (SOT) */}
+          <button
+            id="msnr-generate-all-pairs-btn"
+            onClick={handleGenerateAllPairs}
+            disabled={isScanning}
+            title="Gjenero menjëherë skenarë të rinj live për të 4 valutat (XAU/USD, EUR/USD, GBP/USD, USD/JPY) për sot"
+            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm hover:scale-[1.02]"
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-400" />
+            <span>🔥 Gjenero të 4 Valutat Live (Sot)</span>
+          </button>
+
+          {/* Button 4: PASTRO TË SKADUARIT & INVALIDUAR */}
+          <button
+            id="msnr-clear-invalid-btn"
+            onClick={handleClearInvalidated}
+            disabled={isScanning}
+            title="Fshin skenarët ku Stop Loss 10p është thyer dhe i zëvendëson me skenarë aktivë"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span>🧹 Pastro të Skaduarit</span>
+          </button>
+
+          {/* Button 5: VERIFIKO STRUKTURËN MSNR LIT (Trade with Abjeed) */}
           <button
             id="msnr-verify-structure-btn"
             onClick={() => {
-              const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
+              const targetAsset = selectedGenAsset;
               const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
               const audit = MSNRStrategyEngine.analyzeMarket(targetAsset, livePrice);
               setCurrentAudit(audit);
               setAuditModalOpen(true);
             }}
             title="Verifiko me saktësi se si çdo hyrje bazohet në Strukturë M15, kurthin IDM, dhe pse hyrjet arbitrare 8 pips nuk përdoren"
-            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
           >
-            <Shield className="w-3.5 h-3.5 text-amber-400" />
-            <span>🛡️ Verifiko Strukturën MSNR LIT</span>
+            <Shield className="w-3.5 h-3.5 text-indigo-400" />
+            <span>🛡️ Verifiko Strukturën</span>
           </button>
 
-          {/* Button 4: VENDOS ALARM ÇMIMI ME ZË */}
+          {/* Button 6: VENDOS ALARM ÇMIMI ME ZË */}
           <button
             id="msnr-open-price-trigger-btn"
             onClick={() => {
-              const targetAsset = (selectedFilter !== 'ALL' && selectedFilter !== 'READY' ? selectedFilter : 'XAUUSD') as 'XAUUSD' | 'EURUSD' | 'GBPUSD' | 'USDJPY';
+              const targetAsset = selectedGenAsset;
               const livePrice = livePrices[targetAsset] ?? marketPriceService.getCalibratedPrice(targetAsset);
               setTriggerModalAsset(targetAsset);
               setTriggerModalPrice(livePrice);
